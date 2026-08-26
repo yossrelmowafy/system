@@ -1037,9 +1037,19 @@
                 let student = students.find(s => s.id === cleanCode);
                 alertBox.style.display = 'block';
                 if (student) {
+                    let todayStr = new Date().toLocaleDateString('ar-EG');
+                    let alreadyAttendedToday = attRequests.some(a => a.studentId === student.id && a.date === todayStr);
+
+                    if (alreadyAttendedToday) {
+                        alertBox.style.background = 'rgba(153, 27, 27, 0.9)'; 
+                        alertBox.style.color = '#f87171';
+                        alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> قام بتسجيل الحضور مسبقاً اليوم (${todayStr}) ولا يمكنه التكرار!`;
+                        return;
+                    }
+
                     student.absentCount = 0;
                     localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-                    attRequests.push({ name: student.name + ' (سكان السنتر الفوري)', time: new Date().toLocaleTimeString() });
+                    attRequests.push({ studentId: student.id, name: student.name + ' (سكان السنتر الفوري)', time: new Date().toLocaleTimeString(), date: todayStr });
                     localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
                     commitChanges();
                     updateAdminDashboard();
@@ -1078,7 +1088,19 @@
         if (!currentLoggedInStudent) return;
         let box = document.getElementById('studentAlert');
         box.style.display = 'block';
-        attRequests.push({ name: currentLoggedInStudent.name, time: new Date().toLocaleTimeString() });
+
+        let todayStr = new Date().toLocaleDateString('ar-EG');
+        let alreadyAttendedToday = attRequests.some(a => a.studentId === currentLoggedInStudent.id && a.date === todayStr);
+
+        if (alreadyAttendedToday) {
+            box.style.background = 'rgba(153, 27, 27, 0.9)'; 
+            box.style.color = '#f87171';
+            let dueMsg = currentLoggedInStudent.due > 0 ? `<br>⚠️ تنبيه: يوجد عليك مصروفات/ديون مستحقة بقيمة <b>${currentLoggedInStudent.due} ج.م</b>` : '';
+            box.innerHTML = `❌ عذراً يا ${currentLoggedInStatusName = currentLoggedInStudent.name}، لقد قمت بتسجيل حضورك بالفعل اليوم (${todayStr}) ولا يمكنك التسجيل مرتين.${dueMsg}`;
+            return;
+        }
+
+        attRequests.push({ studentId: currentLoggedInStudent.id, name: currentLoggedInStudent.name, time: new Date().toLocaleTimeString(), date: todayStr });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
 
@@ -1094,7 +1116,19 @@
     function doStudentAttendanceDirect(student) {
         let box = document.getElementById('studentAlert');
         box.style.display = 'block';
-        attRequests.push({ name: student.name + ' (دخول مباشر بالكيو آر)', time: new Date().toLocaleTimeString() });
+
+        let todayStr = new Date().toLocaleDateString('ar-EG');
+        let alreadyAttendedToday = attRequests.some(a => a.studentId === student.id && a.date === todayStr);
+
+        if (alreadyAttendedToday) {
+            box.style.background = 'rgba(153, 27, 27, 0.9)'; 
+            box.style.color = '#f87171';
+            let dueMsg = student.due > 0 ? `<br>⚠️ تنبيه: يوجد عليك مصروفات/ديون مستحقة بقيمة <b>${student.due} ج.م</b>` : '';
+            box.innerHTML = `❌ عذراً يا ${student.name}، لقد قمت بتسجيل حضورك بالفعل اليوم (${todayStr}) ولا يمكنك التسجيل مرتين.${dueMsg}`;
+            return;
+        }
+
+        attRequests.push({ studentId: student.id, name: student.name + ' (دخول مباشر بالكيو آر)', time: new Date().toLocaleTimeString(), date: todayStr });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
 
@@ -1143,7 +1177,7 @@
         }
         let s = students.find(item => item.id === studentId);
         if (!s) { resBox.style.display = 'none'; return; }
-        let studentAtts = attRequests.filter(a => a.name.includes(s.name));
+        let studentAtts = attRequests.filter(a => a.name.includes(s.name) || a.studentId === s.id);
 
         resBox.style.display = 'block';
         resBox.innerHTML = `
@@ -1162,7 +1196,7 @@
     function printStudentProfile(id) {
         let s = students.find(item => item.id === id);
         if (!s) return;
-        let studentAtts = attRequests.filter(a => a.name.includes(s.name));
+        let studentAtts = attRequests.filter(a => a.name.includes(s.name) || a.studentId === s.id);
         let printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html dir="rtl"><head><meta charset="UTF-8"><title>ملف الطالب - ${s.name}</title>
@@ -1294,11 +1328,12 @@
     }
 
     function rejectPay(i) {
+        // حذف طلب الدفع المرفوض تماماً من المصفوفة لضمان عدم ظهوره مجدداً
         payRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
         commitChanges();
         updateAdminDashboard();
-        alert("تم رفض إيصال الدفع!");
+        alert("تم رفض طلب الدفع وحذفه تماماً من السجل!");
     }
 
     function addExpense() {
@@ -1449,3 +1484,4 @@
 
 </body>
 </html>
+```[cite: 4]
