@@ -376,7 +376,6 @@
                 </div>
             </div>
 
-            <!-- أزرار الطباعة الأربعة المحدثة -->
             <div class="card-box" style="background: var(--bg-table); border: 2px solid var(--accent); padding: 10px;">
                 <h3 style="margin-top:0; border:none; margin-bottom:6px; font-size:13px;">🖨️ مركز التقارير والطباعة السريعة[cite: 1]</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
@@ -387,7 +386,6 @@
                 </div>
             </div>
 
-            <!-- بطاقات الإحصائيات الشاملة (الإيرادات، المصروفات، الربح، عدد الطلاب، وسجل الحضور) -->
             <div class="stats-grid">
                 <div class="stat-card"><h4>الإيرادات[cite: 1]</h4><span id="totInc">0</span> ج.م[cite: 1]</div>
                 <div class="stat-card"><h4>المصاريف العامة[cite: 1]</h4><span id="totExp">0</span> ج.م[cite: 1]</div>
@@ -396,7 +394,6 @@
                 <div class="stat-card"><h4>سجل الحضور[cite: 1]</h4><span id="totAttendance" style="color: #a855f7;">0</span> سجل[cite: 1]</div>
             </div>
 
-            <!-- محرك البحث الذكي عن أي طالب -->
             <div class="card-box" style="border: 2px solid var(--accent); background: var(--bg-table);">
                 <h3 style="border: none; margin-bottom: 4px;">🔍 البحث المتقدم وملف الطالب الشامل[cite: 1]</h3>
                 <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">اختر اسم الطالب من القائمة لعرض كافة تفاصيله وحسابه وسجل حضوره مع زر الطباعة:[cite: 1]</p>
@@ -409,7 +406,6 @@
                 <div id="studentProfileResult" style="display: none; margin-top: 10px; padding: 10px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; line-height: 1.6;"></div>
             </div>
 
-            <!-- جهاز سكان كروت الحضور الفوري في السنتر -->
             <div class="card-box" style="border: 2px dashed var(--accent); text-align: center; background: var(--bg-table);">
                 <h3 style="border: none; margin-bottom: 4px;">📷 جهاز سكان كروت الحضور الفوري في السنتر[cite: 1]</h3>
                 <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">مرر كارت كل طالب قدام الكاميرا لتسجيل حضوره مباشرة واعتماده في السيستم[cite: 1]</p>
@@ -421,7 +417,6 @@
             </div>
 
             <div class="grid-2cols">
-                <!-- قسم تحميل المصاريف على طالب معين -->
                 <div class="card-box" style="border: 2px solid var(--accent);">
                     <h3>💰 تحميل مصروف على طالب وإرسال واتساب[cite: 1]</h3>
                     <select id="chargeStudentSelect">
@@ -452,7 +447,6 @@
                 </div>
             </div>
 
-            <!-- قسم ضبط المواعيد المتعددة -->
             <div class="card-box" style="border: 2px solid var(--success);">
                 <h3>📅 ضبط وإضافة مواعيد الحصص (اختيار المادة وإدخال يدوي للوقت)[cite: 1]</h3>
                 <div class="grid-2cols" style="margin-bottom:6px;">
@@ -651,6 +645,33 @@
     let isScannerOpen = false;
     let adminHtml5QrCode = null;
     let isAdminScannerOpen = false;
+
+    // وظيفة استخراج الكود بذكاء من أي نص أو رابط QR ممسوح
+    function extractStudentCode(text) {
+        let cleanText = text.trim();
+        if (cleanText.includes("code=")) {
+            try {
+                let urlObj = new URL(cleanText);
+                return urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || cleanText;
+            } catch(e) {
+                let parts = cleanText.split("code=");
+                if (parts.length > 1) {
+                    return parts[1].split("&")[0].trim();
+                }
+            }
+        } else if (cleanText.includes("id=")) {
+            try {
+                let urlObj = new URL(cleanText);
+                return urlObj.searchParams.get("id") || cleanText;
+            } catch(e) {
+                let parts = cleanText.split("id=");
+                if (parts.length > 1) {
+                    return parts[1].split("&")[0].trim();
+                }
+            }
+        }
+        return cleanText;
+    }
 
     function printStudentsReport() {
         let win = window.open('', '_blank');
@@ -854,7 +875,8 @@
 
     function studentLoginByCode(codeToTest) {
         let code = codeToTest || document.getElementById('loginStudentCode').value.trim();
-        let student = students.find(s => s.id === code);
+        let cleanCode = extractStudentCode(code);
+        let student = students.find(s => s.id === cleanCode);
         if (!student) {
             alert("كود الطالب غير صحيح أو غير مسجل بالسنتر!");
             return;
@@ -890,18 +912,7 @@
             isScannerOpen = true;
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 180, height: 180 } }, (text) => {
-                let cleanCode = text.trim();
-                if (text.includes("code=")) {
-                    try {
-                        let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
-                    } catch(e) {}
-                } else if (text.includes("id=")) {
-                    try {
-                        let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("id") || text;
-                    } catch(e) {}
-                }
+                let cleanCode = extractStudentCode(text);
                 let student = students.find(s => s.id === cleanCode);
                 if (student) {
                     currentLoggedInStudent = student;
@@ -939,18 +950,7 @@
             isAdminScannerOpen = true;
             adminHtml5QrCode = new Html5Qrcode("adminReader");
             adminHtml5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 200, height: 200 } }, (text) => {
-                let cleanCode = text.trim();
-                if (text.includes("code=")) {
-                    try {
-                        let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
-                    } catch(e) {}
-                } else if (text.includes("id=")) {
-                    try {
-                        let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("id") || text;
-                    } catch(e) {}
-                }
+                let cleanCode = extractStudentCode(text);
                 let student = students.find(s => s.id === cleanCode);
                 alertBox.style.display = 'block';
                 if (student) {
