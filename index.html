@@ -623,7 +623,6 @@
                         <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
                         <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
                     `;
-                    // تسجيل الحضور تلقائياً عند الدخول بالرابط المباشر
                     doStudentAttendanceDirect(student);
                 } else {
                     studentLoginByCode(cleanCode);
@@ -633,7 +632,11 @@
         renderStudentSchedule();
     });
 
-    let students = JSON.parse(localStorage.getItem('ysr_sys_st_2027')) || [];
+    // تم إضافة قائمة الطلاب الافتراضية هنا لتثبيتها على أي جهاز يفتح الموقع عبر GitHub
+    let students = JSON.parse(localStorage.getItem('ysr_sys_st_2027')) || [
+        { id: "STU_123456", name: "طالب تجريبي (افتراضي)", phone: "01000000000", subject: "محاسبة مالية وإدارة أعمال", due: 0, absentCount: 0 }
+    ];
+
     let attRequests = JSON.parse(localStorage.getItem('ysr_sys_att_2027')) || [];
     let payRequests = JSON.parse(localStorage.getItem('ysr_sys_pay_2027')) || [];
     let income = parseFloat(localStorage.getItem('ysr_sys_inc_2027')) || 0;
@@ -878,7 +881,6 @@
         document.getElementById('studentDashboardArea').style.display = 'none';
         document.getElementById('studentLoginBox').style.display = 'block';
         document.getElementById('studentAlert').style.display = 'none';
-        // مسح البارامتر من الرابط ليعود للوضع العادي
         if (history.pushState) {
             let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             history.pushState({path:newurl},'',newurl);
