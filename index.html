@@ -9,33 +9,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         body.dark-mode {
-            --bg-card: rgba(13, 19, 33, 0.75);
-            --bg-table: rgba(18, 26, 44, 0.65);
+            --bg-card: rgba(13, 19, 33, 0.45);
+            --bg-table: rgba(18, 26, 44, 0.35);
             --accent: #3b82f6;
             --accent-glow: rgba(59, 130, 246, 0.4);
             --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.15);
-            --th-bg: rgba(23, 33, 56, 0.85);
-            --body-overlay: rgba(5, 7, 12, 0.5);
+            --text-muted: #cbd5e1;
+            --border: rgba(255, 255, 255, 0.2);
+            --th-bg: rgba(23, 33, 56, 0.55);
+            --body-overlay: rgba(5, 7, 12, 0.15);
             --danger: #ef4444;
             --success: #22c55e;
-            --input-bg: rgba(10, 15, 26, 0.7);
+            --input-bg: rgba(10, 15, 26, 0.4);
         }
 
         body.light-mode {
-            --bg-card: rgba(255, 255, 255, 0.80);
-            --bg-table: rgba(248, 250, 252, 0.75);
+            --bg-card: rgba(255, 255, 255, 0.55);
+            --bg-table: rgba(248, 250, 252, 0.50);
             --accent: #1d4ed8;
             --accent-glow: rgba(29, 78, 216, 0.2);
             --text-main: #0f172a;
-            --text-muted: #475569;
-            --border: rgba(0, 0, 0, 0.15);
-            --th-bg: rgba(226, 232, 240, 0.85);
-            --body-overlay: rgba(241, 245, 249, 0.50);
+            --text-muted: #334155;
+            --border: rgba(0, 0, 0, 0.2);
+            --th-bg: rgba(226, 232, 240, 0.60);
+            --body-overlay: rgba(241, 245, 249, 0.20);
             --danger: #dc2626;
             --success: #16a34a;
-            --input-bg: rgba(255, 255, 255, 0.85);
+            --input-bg: rgba(255, 255, 255, 0.65);
         }
 
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease; }
@@ -54,7 +54,8 @@
             display: flex;
             gap: 10px;
             background: var(--bg-card);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             padding: 8px 12px;
             border-radius: 10px;
             border: 1px solid var(--border);
@@ -92,18 +93,20 @@
 
         .card-box {
             background: var(--bg-card);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 14px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             margin-bottom: 10px;
         }
         .card-box h3 { margin-top: 0; color: var(--accent); font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 
         .marquee-box {
-            background: linear-gradient(135deg, rgba(30, 58, 138, 0.85), rgba(37, 99, 235, 0.85));
-            backdrop-filter: blur(5px);
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.65), rgba(37, 99, 235, 0.65));
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             color: #ffffff;
             padding: 10px;
             border-radius: 8px;
@@ -113,6 +116,7 @@
             font-weight: bold;
             font-size: 13px;
             direction: ltr;
+            border: 1px solid var(--border);
         }
         .marquee-box span {
             display: inline-block;
@@ -188,12 +192,13 @@
         }
         .datetime-item {
             background: var(--bg-card);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 9px 12px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
         .datetime-item .label {
             display: block;
@@ -229,7 +234,7 @@
             border-left: 4px solid var(--accent);
             padding: 10px 16px;
             border-radius: 6px 0 0 6px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             z-index: 99999;
             font-size: 13px;
             font-weight: bold;
@@ -328,7 +333,7 @@
                     <div class="card-box" style="text-align: center;">
                         <h3>4️⃣ التواصل مع مستر يسر الموافي</h3>
                         <div style="margin-top: 8px;">
-                            <a href="https://chat.whatsapp.com/your-group-link" class="whatsapp-badge" target="_blank" style="background: #25d366;">جروب دفعة 2027 واتساب</a>
+                            <a href="https://chat.whatsapp.com/CHQTsKqmsRSK0jJqkHU4Ou" class="whatsapp-badge" target="_blank" style="background: #25d366;">جروب دفعة 2027 واتساب</a>
                             <a href="https://wa.me/201015706200" class="whatsapp-badge" target="_blank" style="background: #16a34a;">تواصل شخصي مع مستر يسر</a>
                         </div>
                     </div>
@@ -604,9 +609,26 @@
         }, 500);
 
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromURL = urlParams.get('code');
+        const codeFromURL = urlParams.get('code') || urlParams.get('id');
         if (codeFromURL) {
-            setTimeout(() => { studentLoginByCode(codeFromURL.trim()); }, 300);
+            setTimeout(() => {
+                let cleanCode = codeFromURL.trim();
+                let student = students.find(s => s.id === cleanCode);
+                if (student) {
+                    currentLoggedInStudent = student;
+                    document.getElementById('studentLoginBox').style.display = 'none';
+                    document.getElementById('studentDashboardArea').style.display = 'block';
+                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
+                    document.getElementById('studentProfileDetails').innerHTML = `
+                        <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
+                        <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+                    `;
+                    // تسجيل الحضور تلقائياً عند الدخول بالرابط المباشر
+                    doStudentAttendanceDirect(student);
+                } else {
+                    studentLoginByCode(cleanCode);
+                }
+            }, 300);
         }
         renderStudentSchedule();
     });
@@ -856,6 +878,11 @@
         document.getElementById('studentDashboardArea').style.display = 'none';
         document.getElementById('studentLoginBox').style.display = 'block';
         document.getElementById('studentAlert').style.display = 'none';
+        // مسح البارامتر من الرابط ليعود للوضع العادي
+        if (history.pushState) {
+            let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            history.pushState({path:newurl},'',newurl);
+        }
     }
 
     function toggleStudentScanner() {
@@ -869,10 +896,29 @@
                 if (text.includes("code=")) {
                     try {
                         let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("code") || text;
+                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                } else if (text.includes("id=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("id") || text;
                     } catch(e) {}
                 }
-                studentLoginByCode(cleanCode);
+                let student = students.find(s => s.id === cleanCode);
+                if (student) {
+                    currentLoggedInStudent = student;
+                    if (isScannerOpen && html5QrCode) { html5QrCode.stop().catch(err => {}); cont.style.display = 'none'; isScannerOpen = false; }
+                    document.getElementById('studentLoginBox').style.display = 'none';
+                    document.getElementById('studentDashboardArea').style.display = 'block';
+                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
+                    document.getElementById('studentProfileDetails').innerHTML = `
+                        <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
+                        <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+                    `;
+                    doStudentAttendanceDirect(student);
+                } else {
+                    studentLoginByCode(cleanCode);
+                }
             }, () => {});
         } else {
             if (html5QrCode) {
@@ -899,7 +945,12 @@
                 if (text.includes("code=")) {
                     try {
                         let urlObj = new URL(text);
-                        cleanCode = urlObj.searchParams.get("code") || text;
+                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                } else if (text.includes("id=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("id") || text;
                     } catch(e) {}
                 }
                 let student = students.find(s => s.id === cleanCode);
@@ -954,6 +1005,21 @@
         } else {
             box.style.background = 'rgba(6, 78, 59, 0.9)'; box.style.color = '#4ade80';
             box.innerText = `أهلاً بك يا ${currentLoggedInStudent.name}، تم تسجيل حضورك اليوم بنجاح وطلبك قيد المراجعة ✓`;
+        }
+    }
+
+    function doStudentAttendanceDirect(student) {
+        let box = document.getElementById('studentAlert');
+        box.style.display = 'block';
+        attRequests.push({ name: student.name + ' (دخول مباشر بالكيو آر)', time: new Date().toLocaleTimeString() });
+        localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+
+        if (student.due > 0) {
+            box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
+            box.innerHTML = `تم تسجيل حضورك تلقائياً بنجاح! ⚠️ <b>برجاء سداد مبلغ بقيمة ${student.due} ج.م</b> (طلبك قيد المراجعة لدى مستر يسر الموافي).`;
+        } else {
+            box.style.background = 'rgba(6, 78, 59, 0.9)'; box.style.color = '#4ade80';
+            box.innerText = `أهلاً بك يا ${student.name}، تم تسجيل حضورك اليوم تلقائياً بنجاح ✓`;
         }
     }
 
@@ -1201,7 +1267,7 @@
         let s = students[index];
         let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
         let msg = type === 'welcome' 
-            ? `أهلاً بك يا ${s.name} في منصة مستر يسر الموافي (بكالوريا 2027). كودك: ${s.id}`
+            ? `أهلاً بك يا ${s.name} في منصة مستر يسر الموافي (بكالوريا 2027). كودك: ${s.id}\nرابط الدخول المباشر وتسجيل الحضور:\n${window.location.origin + window.location.pathname}?code=${s.id}`
             : `تنبيه من سنتر مستر يسر للطالب ${s.name}، لاحظنا غيابك المتكرر أو عليك مبالغ مالية متأخرة بقيمة ${s.due} ج.م، يرجى المتابعة.`;
         let url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
