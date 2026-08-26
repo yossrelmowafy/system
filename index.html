@@ -4,6 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة مستر يسر الموافي - إدارة السنتر الذكية (بكالوريا 2027)</title>
+    
+    <!-- تحميل مكتبات الـ Firebase عبر الـ CDN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWLC8tQK6A3qUiRS2NSb4PU7g__7ov18s",
+            authDomain: "ysr-center-2027.firebaseapp.com",
+            databaseURL: "https://ysr-center-2027-default-rtdb.firebaseio.com",
+            projectId: "ysr-center-2027",
+            storageBucket: "ysr-center-2027.firebasestorage.app",
+            messagingSenderId: "564782283150",
+            appId: "1:564782283150:web:5818bec44b9f7cc4b18cdf"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ربط البيانات السحابية بلحظيتها
+        window.initFirebaseSync = function(onDataLoaded) {
+            onValue(ref(db, 'systemData'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.students) localStorage.setItem('ysr_sys_st_2027', JSON.stringify(data.students));
+                    if (data.attRequests) localStorage.setItem('ysr_sys_att_2027', JSON.stringify(data.attRequests));
+                    if (data.payRequests) localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(data.payRequests));
+                    if (data.income !== undefined) localStorage.setItem('ysr_sys_inc_2027', data.income);
+                    if (data.expenses !== undefined) localStorage.setItem('ysr_sys_exp_2027', data.expenses);
+                    if (data.incomeLog) localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(data.incomeLog));
+                    if (data.expensesLog) localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(data.expensesLog));
+                    if (data.customSchedules) localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(data.customSchedules));
+                }
+                if (typeof onDataLoaded === 'function') onDataLoaded();
+            });
+        };
+
+        window.saveSystemDataToCloud = function() {
+            const payload = {
+                students: JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]'),
+                attRequests: JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]'),
+                payRequests: JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]'),
+                income: parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0'),
+                expenses: parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0'),
+                incomeLog: JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]'),
+                expensesLog: JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]'),
+                customSchedules: JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]')
+            };
+            set(ref(db, 'systemData'), payload);
+        };
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -245,11 +297,11 @@
 </head>
 <body class="dark-mode">
 
-<div id="toastNotification">مرحباً بك في منصة مستر يسر الموافي! 🌟[cite: 1]</div>
+<div id="toastNotification">مرحباً بك في منصة مستر يسر الموافي! 🌟</div>
 
 <div class="wrapper">
     <div class="tabs-bar">
-        <h3 style="margin:0; color:var(--accent); font-size:14px;">منصة مستر يسر الموافي (بكالوريا 2027)[cite: 1]</h3>
+        <h3 style="margin:0; color:var(--accent); font-size:14px;">منصة مستر يسر الموافي (بكالوريا 2027)</h3>
         <div style="display: flex; gap: 6px; align-items: center;">
             <button class="theme-toggle-btn" onclick="toggleTheme(); playClickSound();" id="themeBtn">🌙 نايت مود</button>
             <button class="tab-item active" onclick="switchTab('studentTab'); playClickSound();">🌟 بوابة الطالب</button>
@@ -274,15 +326,15 @@
             </div>
         </div>
         <div class="marquee-box">
-            <span>أهلاً بكم يا أبطال بكالوريا 2027 في منصة مستر يسر الموافي للمحاسبة وإدارة الأعمال - طريقك للتميز والتفوق يبدأ من هنا 🚀[cite: 1]</span>
+            <span>أهلاً بكم يا أبطال بكالوريا 2027 في منصة مستر يسر الموافي للمحاسبة وإدارة الأعمال - طريقك للتميز والتفوق يبدأ من هنا 🚀</span>
         </div>
 
         <div class="card-box" id="studentLoginBox" style="max-width: 450px; margin: auto;">
-            <h3>🔑 دخول الطالب (كارت السنتر أو الكود السري)[cite: 1]</h3>
-            <p style="color: var(--text-muted); font-size: 11px;">امسح الكيو آر بكاميرا فونه أو اكتب كودك:[cite: 1]</p>
+            <h3>🔑 دخول الطالب (كارت السنتر أو الكود السري)</h3>
+            <p style="color: var(--text-muted); font-size: 11px;">امسح الكيو آر بكاميرا فونه أو اكتب كودك:</p>
             <input type="text" id="loginStudentCode" placeholder="مثلاً: STU_123456">
-            <button class="btn-custom" onclick="studentLoginByCode(); playClickSound();">فتح حسابي الشخصي[cite: 1]</button>
-            <button class="btn-custom" onclick="toggleStudentScanner(); playClickSound();" style="background: #7c3aed; margin-top: 6px;">📷 فتح كاميرا مسح الكيو آر[cite: 1]</button>
+            <button class="btn-custom" onclick="studentLoginByCode(); playClickSound();">فتح حسابي الشخصي</button>
+            <button class="btn-custom" onclick="toggleStudentScanner(); playClickSound();" style="background: #7c3aed; margin-top: 6px;">📷 فتح كاميرا مسح الكيو آر</button>
             <div id="readerContainer" style="display:none; margin-top:8px;">
                 <div id="reader" style="width:100%; max-width:220px; margin:auto;"></div>
             </div>
@@ -291,8 +343,8 @@
         <div id="studentDashboardArea" style="display: none;">
             <div class="card-box" style="border: 2px solid var(--accent); margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 id="welcomeStudentName" style="margin:0; color:var(--accent); border:none;">أهلاً بك يا بطل[cite: 1]</h3>
-                    <button onclick="studentLogout(); playClickSound();" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">خروج[cite: 1]</button>
+                    <h3 id="welcomeStudentName" style="margin:0; color:var(--accent); border:none;">أهلاً بك يا بطل</h3>
+                    <button onclick="studentLogout(); playClickSound();" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">خروج</button>
                 </div>
                 <div id="studentProfileDetails" style="margin-top: 8px; font-size: 12px; line-height: 1.5;"></div>
             </div>
@@ -300,41 +352,41 @@
             <div class="grid-2cols">
                 <div>
                     <div class="card-box" style="margin-bottom: 10px;">
-                        <h3>1️⃣ تسجيل الحضور الفوري[cite: 1]</h3>
-                        <button class="btn-custom" onclick="doStudentAttendance(); playClickSound();" style="background: var(--success);">تسجيل حضور اليوم للحصة ✓[cite: 1]</button>
+                        <h3>1️⃣ تسجيل الحضور الفوري</h3>
+                        <button class="btn-custom" onclick="doStudentAttendance(); playClickSound();" style="background: var(--success);">تسجيل حضور اليوم للحصة ✓</button>
                         <div id="studentAlert" class="alert-custom"></div>
                     </div>
 
                     <div class="card-box">
-                        <h3>2️⃣ دفع المصروفات وإرسال الإيصال[cite: 1]</h3>
+                        <h3>2️⃣ دفع المصروفات وإرسال الإيصال</h3>
                         <select id="paySubject">
-                            <option value="محاسبة مالية">محاسبة مالية[cite: 1]</option>
-                            <option value="إدارة أعمال">إدارة أعمال[cite: 1]</option>
+                            <option value="محاسبة مالية">محاسبة مالية</option>
+                            <option value="إدارة أعمال">إدارة أعمال</option>
                         </select>
                         <select id="payType">
-                            <option value="اشتراك شهري">اشتراك شهري[cite: 1]</option>
-                            <option value="رسوم امتحانات">رسوم امتحانات[cite: 1]</option>
-                            <option value="مصاريف مذكرة">مصاريف مذكرة[cite: 1]</option>
+                            <option value="اشتراك شهري">اشتراك شهري</option>
+                            <option value="رسوم امتحانات">رسوم امتحانات</option>
+                            <option value="مصاريف مذكرة">مصاريف مذكرة</option>
                         </select>
-                        <input type="text" id="payDetails" placeholder="تفاصيل (مثلاً: شهر يناير)[cite: 1]">
-                        <input type="number" id="payVal" placeholder="المبلغ المدفوع (بالجنيه)[cite: 1]">
-                        <button class="btn-custom" onclick="sendPaymentRequest(); playClickSound();">تأكيد الدفع وإرسال الإيصال[cite: 1]</button>
+                        <input type="text" id="payDetails" placeholder="تفاصيل (مثلاً: شهر يناير)">
+                        <input type="number" id="payVal" placeholder="المبلغ المدفوع (بالجنيه)">
+                        <button class="btn-custom" onclick="sendPaymentRequest(); playClickSound();">تأكيد الدفع وإرسال الإيصال</button>
                     </div>
                 </div>
 
                 <div>
                     <div class="card-box" style="margin-bottom: 10px; text-align: center;">
-                        <h3>3️⃣ جدول مواعيد الحصص الأسبوعية[cite: 1]</h3>
+                        <h3>3️⃣ جدول مواعيد الحصص الأسبوعية</h3>
                         <div id="studentScheduleView" style="font-size: 13px; color: var(--accent); font-weight: bold; padding: 6px; text-align: right;">
-                            جارِ تحميل المواعيد...[cite: 1]
+                            جارِ تحميل المواعيد...
                         </div>
                     </div>
 
                     <div class="card-box" style="text-align: center;">
-                        <h3>4️⃣ التواصل مع مستر يسر الموافي[cite: 1]</h3>
+                        <h3>4️⃣ التواصل مع مستر يسر الموافي</h3>
                         <div style="margin-top: 8px;">
-                            <a href="https://chat.whatsapp.com/CHQTsKqmsRSK0jJqkHU4Ou" class="whatsapp-badge" target="_blank" style="background: #25d366;">جروب دفعة 2027 واتساب[cite: 1]</a>
-                            <a href="https://wa.me/201015706200" class="whatsapp-badge" target="_blank" style="background: #16a34a;">تواصل شخصي مع مستر يسر[cite: 1]</a>
+                            <a href="https://chat.whatsapp.com/CHQTsKqmsRSK0jJqkHU4Ou" class="whatsapp-badge" target="_blank" style="background: #25d366;">جروب دفعة 2027 واتساب</a>
+                            <a href="https://wa.me/201015706200" class="whatsapp-badge" target="_blank" style="background: #16a34a;">تواصل شخصي مع مستر يسر</a>
                         </div>
                     </div>
                 </div>
@@ -360,56 +412,60 @@
         </div>
         <div id="loginScreen">
             <div class="card-box" style="max-width: 320px; margin: 30px auto; text-align: center;">
-                <h3>🔐 بوابة إدارة السنتر[cite: 1]</h3>
-                <input type="password" id="supPass" placeholder="كلمة المرور السرية[cite: 1]">
-                <button class="btn-custom" onclick="loginAdmin(); playClickSound();">دخول اللوحة[cite: 1]</button>
+                <h3>🔐 بوابة إدارة السنتر</h3>
+                <input type="password" id="supPass" placeholder="كلمة المرور السرية">
+                <button class="btn-custom" onclick="loginAdmin(); playClickSound();">دخول اللوحة</button>
             </div>
         </div>
 
         <div id="dashboardScreen" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
-                <h2 style="margin:0; color: var(--accent); font-size: 16px;">لوحة تحكم مستر يسر الموافي الشاملة[cite: 1]</h2>
+                <h2 style="margin:0; color: var(--accent); font-size: 16px;">لوحة تحكم مستر يسر الموافي الشاملة</h2>
                 <div>
-                    <button class="btn-custom" onclick="exportToExcel(); playClickSound();" style="background: #16a34a; width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">📊 تصدير Excel[cite: 1]</button>
-                    <button class="btn-custom" onclick="resetSystemData(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">⚙️ تصفير[cite: 1]</button>
-                    <button class="btn-custom" onclick="logoutAdmin(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px;">خروج[cite: 1]</button>
+                    <button class="btn-custom" onclick="exportToExcel(); playClickSound();" style="background: #16a34a; width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">📊 تصدير Excel</button>
+                    <button class="btn-custom" onclick="resetSystemData(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">⚙️ تصفير</button>
+                    <button class="btn-custom" onclick="logoutAdmin(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px;">خروج</button>
                 </div>
             </div>
 
+            <!-- أزرار الطباعة الأربعة المحدثة -->
             <div class="card-box" style="background: var(--bg-table); border: 2px solid var(--accent); padding: 10px;">
-                <h3 style="margin-top:0; border:none; margin-bottom:6px; font-size:13px;">🖨️ مركز التقارير والطباعة السريعة[cite: 1]</h3>
+                <h3 style="margin-top:0; border:none; margin-bottom:6px; font-size:13px;">🖨️ مركز التقارير والطباعة السريعة</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
-                    <button class="btn-custom" onclick="printStudentsReport(); playClickSound();" style="background: #2563eb; font-size: 12px; padding: 8px;">👥 طباعة أسامي الطلاب[cite: 1]</button>
-                    <button class="btn-custom" onclick="printIncomeReport(); playClickSound();" style="background: #16a34a; font-size: 12px; padding: 8px;">💵 طباعة تفاصيل الإيرادات[cite: 1]</button>
-                    <button class="btn-custom" onclick="printExpensesReport(); playClickSound();" style="background: #dc2626; font-size: 12px; padding: 8px;">📉 طباعة تفاصيل المصروفات[cite: 1]</button>
-                    <button class="btn-custom" onclick="printAttendanceReport(); playClickSound();" style="background: #7c3aed; font-size: 12px; padding: 8px;">✅ طباعة الحضور والغياب[cite: 1]</button>
+                    <button class="btn-custom" onclick="printStudentsReport(); playClickSound();" style="background: #2563eb; font-size: 12px; padding: 8px;">👥 طباعة أسامي الطلاب</button>
+                    <button class="btn-custom" onclick="printIncomeReport(); playClickSound();" style="background: #16a34a; font-size: 12px; padding: 8px;">💵 طباعة تفاصيل الإيرادات</button>
+                    <button class="btn-custom" onclick="printExpensesReport(); playClickSound();" style="background: #dc2626; font-size: 12px; padding: 8px;">📉 طباعة تفاصيل المصروفات</button>
+                    <button class="btn-custom" onclick="printAttendanceReport(); playClickSound();" style="background: #7c3aed; font-size: 12px; padding: 8px;">✅ طباعة الحضور والغياب</button>
                 </div>
             </div>
 
+            <!-- بطاقات الإحصائيات الشاملة (الإيرادات، المصروفات، الربح، عدد الطلاب، وسجل الحضور) -->
             <div class="stats-grid">
-                <div class="stat-card"><h4>الإيرادات[cite: 1]</h4><span id="totInc">0</span> ج.م[cite: 1]</div>
-                <div class="stat-card"><h4>المصاريف العامة[cite: 1]</h4><span id="totExp">0</span> ج.م[cite: 1]</div>
-                <div class="stat-card"><h4>صافي الربح[cite: 1]</h4><span id="netProf" style="color: var(--success);">0</span> ج.م[cite: 1]</div>
-                <div class="stat-card"><h4>إجمالي الطلاب[cite: 1]</h4><span id="totStudents" style="color: #3b82f6;">0</span> طالب[cite: 1]</div>
-                <div class="stat-card"><h4>سجل الحضور[cite: 1]</h4><span id="totAttendance" style="color: #a855f7;">0</span> سجل[cite: 1]</div>
+                <div class="stat-card"><h4>الإيرادات</h4><span id="totInc">0</span> ج.م</div>
+                <div class="stat-card"><h4>المصاريف العامة</h4><span id="totExp">0</span> ج.م</div>
+                <div class="stat-card"><h4>صافي الربح</h4><span id="netProf" style="color: var(--success);">0</span> ج.م</div>
+                <div class="stat-card"><h4>إجمالي الطلاب</h4><span id="totStudents" style="color: #3b82f6;">0</span> طالب</div>
+                <div class="stat-card"><h4>سجل الحضور</h4><span id="totAttendance" style="color: #a855f7;">0</span> سجل</div>
             </div>
 
+            <!-- محرك البحث الذكي عن أي طالب -->
             <div class="card-box" style="border: 2px solid var(--accent); background: var(--bg-table);">
-                <h3 style="border: none; margin-bottom: 4px;">🔍 البحث المتقدم وملف الطالب الشامل[cite: 1]</h3>
-                <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">اختر اسم الطالب من القائمة لعرض كافة تفاصيله وحسابه وسجل حضوره مع زر الطباعة:[cite: 1]</p>
+                <h3 style="border: none; margin-bottom: 4px;">🔍 البحث المتقدم وملف الطالب الشامل</h3>
+                <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">اختر اسم الطالب من القائمة لعرض كافة تفاصيله وحسابه وسجل حضوره مع زر الطباعة:</p>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <select id="searchStudentSelect" style="flex: 1; margin: 0;">
-                        <option value="">اختر اسم الطالب للبحث...[cite: 1]</option>
+                        <option value="">اختر اسم الطالب للبحث...</option>
                     </select>
-                    <button class="btn-custom" onclick="searchStudentProfile(); playClickSound();" style="width: auto; padding: 8px 16px;">عرض الملف الشامل[cite: 1]</button>
+                    <button class="btn-custom" onclick="searchStudentProfile(); playClickSound();" style="width: auto; padding: 8px 16px;">عرض الملف الشامل</button>
                 </div>
                 <div id="studentProfileResult" style="display: none; margin-top: 10px; padding: 10px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; line-height: 1.6;"></div>
             </div>
 
+            <!-- جهاز سكان كروت الحضور الفوري في السنتر -->
             <div class="card-box" style="border: 2px dashed var(--accent); text-align: center; background: var(--bg-table);">
-                <h3 style="border: none; margin-bottom: 4px;">📷 جهاز سكان كروت الحضور الفوري في السنتر[cite: 1]</h3>
-                <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">مرر كارت كل طالب قدام الكاميرا لتسجيل حضوره مباشرة واعتماده في السيستم[cite: 1]</p>
-                <button class="btn-custom" onclick="toggleAdminScanner(); playClickSound();" style="background: #7c3aed; max-width: 280px; margin: auto;">📸 تشغيل كاميرا سكان كروت الحصة[cite: 1]</button>
+                <h3 style="border: none; margin-bottom: 4px;">📷 جهاز سكان كروت الحضور الفوري في السنتر</h3>
+                <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">مرر كارت كل طالب قدام الكاميرا لتسجيل حضوره مباشرة واعتماده في السيستم</p>
+                <button class="btn-custom" onclick="toggleAdminScanner(); playClickSound();" style="background: #7c3aed; max-width: 280px; margin: auto;">📸 تشغيل كاميرا سكان كروت الحصة</button>
                 <div id="adminReaderContainer" style="display:none; margin-top:10px;">
                     <div id="adminReader" style="width:100%; max-width:240px; margin:auto;"></div>
                 </div>
@@ -417,98 +473,100 @@
             </div>
 
             <div class="grid-2cols">
+                <!-- قسم تحميل المصاريف على طالب معين -->
                 <div class="card-box" style="border: 2px solid var(--accent);">
-                    <h3>💰 تحميل مصروف على طالب وإرسال واتساب[cite: 1]</h3>
+                    <h3>💰 تحميل مصروف على طالب وإرسال واتساب</h3>
                     <select id="chargeStudentSelect">
-                        <option value="">اختر الطالب...[cite: 1]</option>
+                        <option value="">اختر الطالب...</option>
                     </select>
                     <select id="chargeReasonSelect">
-                        <option value="ثمن مذكرة الشرح">ثمن مذكرة الشرح[cite: 1]</option>
-                        <option value="رسوم الامتحانات الشهرية">رسوم الامتحانات الشهرية[cite: 1]</option>
-                        <option value="اشتراك حصة إضافية / مراجعة">اشتراك حصة إضافية / مراجعة[cite: 1]</option>
-                        <option value="غرامة تأخير / غياب بدون عذر">غرامة تأخير / غياب بدون عذر[cite: 1]</option>
-                        <option value="مصاريف سنتر إضافية">مصاريف سنتر إضافية[cite: 1]</option>
+                        <option value="ثمن مذكرة الشرح">ثمن مذكرة الشرح</option>
+                        <option value="رسوم الامتحانات الشهرية">رسوم الامتحانات الشهرية</option>
+                        <option value="اشتراك حصة إضافية / مراجعة">اشتراك حصة إضافية / مراجعة</option>
+                        <option value="غرامة تأخير / غياب بدون عذر">غرامة تأخير / غياب بدون عذر</option>
+                        <option value="مصاريف سنتر إضافية">مصاريف سنتر إضافية</option>
                     </select>
-                    <input type="number" id="chargeAmount" placeholder="المبلغ المطلوب (بالجنيه)[cite: 1]">
-                    <button class="btn-custom" onclick="chargeStudentFee(); playClickSound();" style="background: #2563eb;">إضافة المصروف للطالب وإرسال الواتساب[cite: 1]</button>
+                    <input type="number" id="chargeAmount" placeholder="المبلغ المطلوب (بالجنيه)">
+                    <button class="btn-custom" onclick="chargeStudentFee(); playClickSound();" style="background: #2563eb;">إضافة المصروف للطالب وإرسال الواتساب</button>
                 </div>
 
                 <div class="card-box">
-                    <h3>إضافة مصروفات السنتر العامة[cite: 1]</h3>
+                    <h3>إضافة مصروفات السنتر العامة</h3>
                     <select id="expTypeSelect">
-                        <option value="إيجار السنتر">إيجار السنتر[cite: 1]</option>
-                        <option value="أدوات ومطبوعات">أدوات ومطبوعات[cite: 1]</option>
-                        <option value="ضيافة وخدمات">ضيافة وخدمات[cite: 1]</option>
-                        <option value="صيانة وأجهزة">صيانة وأجهزة[cite: 1]</option>
-                        <option value="أخرى">مصروفات أخرى[cite: 1]</option>
+                        <option value="إيجار السنتر">إيجار السنتر</option>
+                        <option value="أدوات ومطبوعات">أدوات ومطبوعات</option>
+                        <option value="ضيافة وخدمات">ضيافة وخدمات</option>
+                        <option value="صيانة وأجهزة">صيانة وأجهزة</option>
+                        <option value="أخرى">مصروفات أخرى</option>
                     </select>
-                    <input type="number" id="expValManual" placeholder="قيمة المصروف (بالجنيه)[cite: 1]">
-                    <button class="btn-custom" onclick="addExpense(); playClickSound();" style="background: var(--danger);">حفظ المصروف العام[cite: 1]</button>
+                    <input type="number" id="expValManual" placeholder="قيمة المصروف (بالجنيه)">
+                    <button class="btn-custom" onclick="addExpense(); playClickSound();" style="background: var(--danger);">حفظ المصروف العام</button>
                 </div>
             </div>
 
+            <!-- قسم ضبط المواعيد المتعددة -->
             <div class="card-box" style="border: 2px solid var(--success);">
-                <h3>📅 ضبط وإضافة مواعيد الحصص (اختيار المادة وإدخال يدوي للوقت)[cite: 1]</h3>
+                <h3>📅 ضبط وإضافة مواعيد الحصص (اختيار المادة وإدخال يدوي للوقت)</h3>
                 <div class="grid-2cols" style="margin-bottom:6px;">
                     <div>
-                        <label style="font-size:11px; color:var(--text-muted);">المادة:[cite: 1]</label>
+                        <label style="font-size:11px; color:var(--text-muted);">المادة:</label>
                         <select id="manualSubjSelect">
-                            <option value="محاسبة مالية">محاسبة مالية[cite: 1]</option>
-                            <option value="إدارة أعمال">إدارة أعمال[cite: 1]</option>
-                            <option value="محاسبة مالية وإدارة أعمال">المادتين معاً[cite: 1]</option>
+                            <option value="محاسبة مالية">محاسبة مالية</option>
+                            <option value="إدارة أعمال">إدارة أعمال</option>
+                            <option value="محاسبة مالية وإدارة أعمال">المادتين معاً</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:11px; color:var(--text-muted);">اليوم والوقت:[cite: 1]</label>
-                        <input type="text" id="manualTime" placeholder="مثلاً: السبت والثلاثاء - 4 عصراً[cite: 1]">
+                        <label style="font-size:11px; color:var(--text-muted);">اليوم والوقت:</label>
+                        <input type="text" id="manualTime" placeholder="مثلاً: السبت والثلاثاء - 4 عصراً">
                     </div>
                 </div>
-                <button class="btn-custom" onclick="addCustomSchedule(); playClickSound();" style="background: var(--success); max-width: 250px;">+ إضافة هذا الموعد للجدول[cite: 1]</button>
+                <button class="btn-custom" onclick="addCustomSchedule(); playClickSound();" style="background: var(--success); max-width: 250px;">+ إضافة هذا الموعد للجدول</button>
                 
                 <div style="margin-top: 10px;">
-                    <h4 style="margin:5px 0; font-size:12px; color:var(--accent);">المواعيد الحالية المسجلة (مع صلاحية الحذف):[cite: 1]</h4>
+                    <h4 style="margin:5px 0; font-size:12px; color:var(--accent);">المواعيد الحالية المسجلة (مع صلاحية الحذف):</h4>
                     <div id="adminScheduleList" style="max-height: 100px; overflow-y: auto; background:var(--bg-table); padding:6px; border-radius:6px; font-size:12px;"></div>
                 </div>
             </div>
 
             <div class="grid-2cols">
                 <div class="card-box">
-                    <h3 id="studentFormTitle">➕ إضافة طالب جديد[cite: 1]</h3>
+                    <h3 id="studentFormTitle">➕ إضافة طالب جديد</h3>
                     <input type="hidden" id="editStudentId">
-                    <input type="text" id="newSName" placeholder="اسم الطالب بالكامل[cite: 1]">
-                    <input type="text" id="newSPhone" placeholder="رقم الهاتف (واتساب)[cite: 1]">
+                    <input type="text" id="newSName" placeholder="اسم الطالب بالكامل">
+                    <input type="text" id="newSPhone" placeholder="رقم الهاتف (واتساب)">
                     <select id="newSSubject">
-                        <option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)[cite: 1]</option>
-                        <option value="محاسبة مالية">محاسبة مالية فقط[cite: 1]</option>
-                        <option value="إدارة أعمال">إدارة أعمال فقط[cite: 1]</option>
+                        <option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)</option>
+                        <option value="محاسبة مالية">محاسبة مالية فقط</option>
+                        <option value="إدارة أعمال">إدارة أعمال فقط</option>
                     </select>
-                    <input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)[cite: 1]">
-                    <button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود[cite: 1]</button>
+                    <input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)">
+                    <button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود</button>
                     <div style="text-align: center; margin-top: 8px;"><div id="newStudentQr" style="display: inline-block; background: white; padding: 4px; border-radius: 6px;"></div></div>
                 </div>
 
                 <div>
                     <div class="card-box" style="margin-bottom: 10px;">
-                        <h3>⏳ طلبات الحضور المعلقة (قبول / رفض)[cite: 1]</h3>
+                        <h3>⏳ طلبات الحضور المعلقة (قبول / رفض)</h3>
                         <div style="max-height: 110px; overflow-y: auto;">
-                            <table><thead><tr><th>الاسم[cite: 1]</th><th>الوقت[cite: 1]</th><th>الإجراء[cite: 1]</th></tr></thead><tbody id="attTable"></tbody></table>
+                            <table><thead><tr><th>الاسم</th><th>الوقت</th><th>الإجراء</th></tr></thead><tbody id="attTable"></tbody></table>
                         </div>
                     </div>
 
                     <div class="card-box">
-                        <h3>💳 مدفوعات قيد المراجعة (اعتماد / رفض)[cite: 1]</h3>
+                        <h3>💳 مدفوعات قيد المراجعة (اعتماد / رفض)</h3>
                         <div style="max-height: 110px; overflow-y: auto;">
-                            <table><thead><tr><th>الاسم[cite: 1]</th><th>المبلغ[cite: 1]</th><th>الإجراء[cite: 1]</th></tr></thead><tbody id="payTable"></tbody></table>
+                            <table><thead><tr><th>الاسم</th><th>المبلغ</th><th>الإجراء</th></tr></thead><tbody id="payTable"></tbody></table>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card-box">
-                <h3>📋 سجل الطلاب والتحكم الكامل (تعديل وحذف أي شيء)[cite: 1]</h3>
+                <h3>📋 سجل الطلاب والتحكم الكامل (تعديل وحذف أي شيء)</h3>
                 <div style="overflow-x: auto;">
                     <table>
-                        <thead><tr><th>الكود[cite: 1]</th><th>الاسم[cite: 1]</th><th>المادة[cite: 1]</th><th>الهاتف[cite: 1]</th><th>الديون[cite: 1]</th><th>QR[cite: 1]</th><th>واتساب[cite: 1]</th><th>التحكم[cite: 1]</th></tr></thead>
+                        <thead><tr><th>الكود</th><th>الاسم</th><th>المادة</th><th>الهاتف</th><th>الديون</th><th>QR</th><th>واتساب</th><th>التحكم</th></tr></thead>
                         <tbody id="studentsListTable"></tbody>
                     </table>
                 </div>
@@ -519,21 +577,21 @@
 
 <div id="receiptModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:var(--bg-card); backdrop-filter:blur(12px); border:2px solid var(--accent); padding:20px; border-radius:10px; text-align:center; color:var(--text-main); max-width:350px; width:90%;">
-        <h3 style="color:var(--accent); margin-top:0;">📜 تم إرسال الطلب بنجاح[cite: 1]</h3>
-        <p style="color:var(--text-muted); font-size:11px;">طلبك حالياً قيد المراجعة من مستر يسر الموافي وسيتم اعتماده قريباً.[cite: 1]</p>
+        <h3 style="color:var(--accent); margin-top:0;">📜 تم إرسال الطلب بنجاح</h3>
+        <p style="color:var(--text-muted); font-size:11px;">طلبك حالياً قيد المراجعة من مستر يسر الموافي وسيتم اعتماده قريباً.</p>
         <div id="receiptContent" style="background:var(--bg-table); padding:10px; border-radius:6px; text-align:right; margin:10px 0; font-size:12px; line-height:1.6;"></div>
-        <button onclick="closeReceiptModal(); playClickSound();" class="btn-custom">إغلاق الإيصال[cite: 1]</button>
+        <button onclick="closeReceiptModal(); playClickSound();" class="btn-custom">إغلاق الإيصال</button>
     </div>
 </div>
 
 <div id="printModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:10px; text-align:center; color:black; max-width:300px;">
-        <h3 id="printStudentName" style="margin-top:0; color:#111;">كود الطالب[cite: 1]</h3>
+        <h3 id="printStudentName" style="margin-top:0; color:#111;">كود الطالب</h3>
         <div id="singleQrCodeContainer" style="display:inline-block; padding:6px; background:#fff; border:1px solid #ccc; margin:8px 0;"></div>
         <p id="printStudentIdCode" style="font-weight:bold; font-size:14px; color:#333;"></p>
         <div style="display:flex; gap:6px; margin-top:10px;">
-            <button onclick="window.print()" style="background:#2563eb; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">طباعة[cite: 1]</button>
-            <button onclick="closePrintModal(); playClickSound();" style="background:#dc2626; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">إغلاق[cite: 1]</button>
+            <button onclick="window.print()" style="background:#2563eb; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">طباعة</button>
+            <button onclick="closePrintModal(); playClickSound();" style="background:#dc2626; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">إغلاق</button>
         </div>
     </div>
 </div>
@@ -602,6 +660,17 @@
             setTimeout(() => { toast.classList.remove('show'); }, 4000);
         }, 500);
 
+        // تشغيل المزامنة الفورية من Firebase وتحديث واجهة الإدارة والطلاب تلقائياً
+        if (typeof window.initFirebaseSync === 'function') {
+            window.initFirebaseSync(() => {
+                reloadLocalVariables();
+                renderStudentSchedule();
+                if (document.getElementById('dashboardScreen').style.display === 'block') {
+                    updateAdminDashboard();
+                }
+            });
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const codeFromURL = urlParams.get('code') || urlParams.get('id');
         if (codeFromURL) {
@@ -612,7 +681,7 @@
                     currentLoggedInStudent = student;
                     document.getElementById('studentLoginBox').style.display = 'none';
                     document.getElementById('studentDashboardArea').style.display = 'block';
-                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟[cite: 1]`;
+                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
                     document.getElementById('studentProfileDetails').innerHTML = `
                         <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
                         <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
@@ -626,19 +695,30 @@
         renderStudentSchedule();
     });
 
-    let students = JSON.parse(localStorage.getItem('ysr_sys_st_2027')) || [];
-    let attRequests = JSON.parse(localStorage.getItem('ysr_sys_att_2027')) || [];
-    let payRequests = JSON.parse(localStorage.getItem('ysr_sys_pay_2027')) || [];
-    let income = parseFloat(localStorage.getItem('ysr_sys_inc_2027')) || 0;
-    let expenses = parseFloat(localStorage.getItem('ysr_sys_exp_2027')) || 0;
-    
-    let incomeLog = JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027')) || [];
-    let expensesLog = JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027')) || [];
+    // المتغيرات المحلية وسيتم تحديثها سحابياً
+    let students = [];
+    let attRequests = [];
+    let payRequests = [];
+    let income = 0;
+    let expenses = 0;
+    let incomeLog = [];
+    let expensesLog = [];
+    let customSchedules = [];
 
-    let customSchedules = JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027')) || [
-        { subject: "محاسبة مالية", time: "السبت والثلاثاء - 4 عصراً" },
-        { subject: "إدارة أعمال", time: "الأحد والأربعاء - 2 ظهراً" }
-    ];
+    function reloadLocalVariables() {
+        students = JSON.parse(localStorage.getItem('ysr_sys_st_2027')) || [];
+        attRequests = JSON.parse(localStorage.getItem('ysr_sys_att_2027')) || [];
+        payRequests = JSON.parse(localStorage.getItem('ysr_sys_pay_2027')) || [];
+        income = parseFloat(localStorage.getItem('ysr_sys_inc_2027')) || 0;
+        expenses = parseFloat(localStorage.getItem('ysr_sys_exp_2027')) || 0;
+        incomeLog = JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027')) || [];
+        expensesLog = JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027')) || [];
+        customSchedules = JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027')) || [
+            { subject: "محاسبة مالية", time: "السبت والثلاثاء - 4 عصراً" },
+            { subject: "إدارة أعمال", time: "الأحد والأربعاء - 2 ظهراً" }
+        ];
+    }
+    reloadLocalVariables();
 
     let currentLoggedInStudent = null;
     let html5QrCode = null;
@@ -646,31 +726,10 @@
     let adminHtml5QrCode = null;
     let isAdminScannerOpen = false;
 
-    // وظيفة استخراج الكود بذكاء من أي نص أو رابط QR ممسوح
-    function extractStudentCode(text) {
-        let cleanText = text.trim();
-        if (cleanText.includes("code=")) {
-            try {
-                let urlObj = new URL(cleanText);
-                return urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || cleanText;
-            } catch(e) {
-                let parts = cleanText.split("code=");
-                if (parts.length > 1) {
-                    return parts[1].split("&")[0].trim();
-                }
-            }
-        } else if (cleanText.includes("id=")) {
-            try {
-                let urlObj = new URL(cleanText);
-                return urlObj.searchParams.get("id") || cleanText;
-            } catch(e) {
-                let parts = cleanText.split("id=");
-                if (parts.length > 1) {
-                    return parts[1].split("&")[0].trim();
-                }
-            }
+    function commitChanges() {
+        if (typeof window.saveSystemDataToCloud === 'function') {
+            window.saveSystemDataToCloud();
         }
-        return cleanText;
     }
 
     function printStudentsReport() {
@@ -678,10 +737,10 @@
         let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير أسامي وبيانات الطلاب</title>
         <style>body{font-family:'Cairo',Arial;padding:20px;}h2{color:#1d4ed8;text-align:center;}table{width:100%;border-collapse:collapse;margin-top:15px;}th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}th{background:#f1f5f9;}</style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير أسامي وبيانات الطلاب (2027)[cite: 1]</h2>
+        <h2>منصة مستر يسر الموافي - تقرير أسامي وبيانات الطلاب (2027)</h2>
         <hr>
         <table>
-        <thead><tr><th>الكود[cite: 1]</th><th>اسم الطالب[cite: 1]</th><th>المادة[cite: 1]</th><th>الهاتف[cite: 1]</th><th>الموقف المالي[cite: 1]</th></tr></thead>
+        <thead><tr><th>الكود</th><th>اسم الطالب</th><th>المادة</th><th>الهاتف</th><th>الموقف المالي</th></tr></thead>
         <tbody>`;
         students.forEach(s => {
             html += `<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.subject || 'الكل'}</td><td>${s.phone || 'بدون'}</td><td style="color:${s.due > 0 ? 'red' : 'green'};">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً'}</td></tr>`;
@@ -703,18 +762,18 @@
             th{background:#f0fdf4;color:#16a34a;}
         </style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الإيرادات (ماذا كسبت ومن أين؟)[cite: 1]</h2>
+        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الإيرادات (ماذا كسبت ومن أين؟)</h2>
         <hr>
         <div class="total-box">
-            <p style="margin:0; font-weight:bold;">إجمالي الإيرادات المحصلة:[cite: 1]</p>
-            <h2 style="color:#16a34a; margin:5px 0;">${income} ج.م[cite: 1]</h2>
+            <p style="margin:0; font-weight:bold;">إجمالي الإيرادات المحصلة:</p>
+            <h2 style="color:#16a34a; margin:5px 0;">${income} ج.م</h2>
         </div>
         <table>
-        <thead><tr><th>م[cite: 1]</th><th>اسم الطالب / المصدر[cite: 1]</th><th>البند / المادة[cite: 1]</th><th>التفاصيل[cite: 1]</th><th>المبلغ[cite: 1]</th></tr></thead>
+        <thead><tr><th>م</th><th>اسم الطالب / المصدر</th><th>البند / المادة</th><th>التفاصيل</th><th>المبلغ</th></tr></thead>
         <tbody>`;
         
         if(incomeLog.length === 0) {
-            html += `<tr><td colspan="5">لا توجد حركات إيرادات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${income} ج.م[cite: 1]</td></tr>`;
+            html += `<tr><td colspan="5">لا توجد حركات إيرادات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${income} ج.م</td></tr>`;
         } else {
             incomeLog.forEach((item, idx) => {
                 html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.subject || 'اشتراك'}</td><td>${item.details || '-'}</td><td style="color:#16a34a; font-weight:bold;">+${item.amount} ج.م</td></tr>`;
@@ -737,18 +796,18 @@
             th{background:#fef2f2;color:#dc2626;}
         </style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير تفصيلي المصروفات (ماذا صرفت وأين ذهبت الأموال؟)[cite: 1]</h2>
+        <h2>منصة مستر يسر الموافي - تقرير تفصيلي المصروفات (ماذا صرفت وأين ذهبت الأموال؟)</h2>
         <hr>
         <div class="total-box">
-            <p style="margin:0; font-weight:bold;">إجمالي المصروفات المسجلة:[cite: 1]</p>
-            <h2 style="color:#dc2626; margin:5px 0;">${expenses} ج.م[cite: 1]</h2>
+            <p style="margin:0; font-weight:bold;">إجمالي المصروفات المسجلة:</p>
+            <h2 style="color:#dc2626; margin:5px 0;">${expenses} ج.م</h2>
         </div>
         <table>
-        <thead><tr><th>م[cite: 1]</th><th>نوع وبند المصروف[cite: 1]</th><th>المبلغ المدفوع[cite: 1]</th></tr></thead>
+        <thead><tr><th>م</th><th>نوع وبند المصروف</th><th>المبلغ المدفوع</th></tr></thead>
         <tbody>`;
         
         if(expensesLog.length === 0) {
-            html += `<tr><td colspan="3">لا توجد بنود مصروفات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${expenses} ج.م[cite: 1]</td></tr>`;
+            html += `<tr><td colspan="3">لا توجد بنود مصروفات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${expenses} ج.م</td></tr>`;
         } else {
             expensesLog.forEach((item, idx) => {
                 html += `<tr><td>${idx+1}</td><td><b>${item.type}</b></td><td style="color:#dc2626; font-weight:bold;">-${item.amount} ج.م</td></tr>`;
@@ -770,14 +829,14 @@
             th{background:#f5f3ff;color:#7c3aed;}
         </style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الحضور والغياب للطلاب[cite: 1]</h2>
+        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الحضور والغياب للطلاب</h2>
         <hr>
-        <h3>سجل الطلاب الحاضرين:[cite: 1]</h3>
+        <h3>سجل الطلاب الحاضرين:</h3>
         <table>
-        <thead><tr><th>م[cite: 1]</th><th>اسم الطالب[cite: 1]</th><th>وقت الحضور[cite: 1]</th></tr></thead>
+        <thead><tr><th>م</th><th>اسم الطالب</th><th>وقت الحضور</th></tr></thead>
         <tbody>`;
         if(attRequests.length === 0) {
-            html += `<tr><td colspan="3">لا توجد سجلات حضور معتمدة حالياً[cite: 1]</td></tr>`;
+            html += `<tr><td colspan="3">لا توجد سجلات حضور معتمدة حالياً</td></tr>`;
         } else {
             attRequests.forEach((item, idx) => {
                 html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.time}</td></tr>`;
@@ -807,8 +866,8 @@
             adminHtml += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; border-bottom:1px solid var(--border); padding-bottom:2px;">
                 <span>${subjText} ${item.time}</span>
                 <div>
-                    <button onclick="editSchedule(${index}); playClickSound();" style="background:#d97706; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px; margin-left:2px;">تعديل[cite: 1]</button>
-                    <button onclick="removeSchedule(${index}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">حذف[cite: 1]</button>
+                    <button onclick="editSchedule(${index}); playClickSound();" style="background:#d97706; color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px; margin-left:2px;">تعديل</button>
+                    <button onclick="removeSchedule(${index}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:10px;">حذف</button>
                 </div>
             </div>`;
         });
@@ -822,6 +881,7 @@
         if (!time) { alert("أدخل اليوم والوقت بشكل صحيح"); return; }
         customSchedules.push({ subject: subj, time: time });
         localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
+        commitChanges();
         document.getElementById('manualTime').value = '';
         renderStudentSchedule();
         alert("تم إضافة الموعد بنجاح!");
@@ -833,6 +893,7 @@
         if (newTime !== null && newTime.trim() !== "") {
             customSchedules[index].time = newTime.trim();
             localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
+            commitChanges();
             renderStudentSchedule();
             alert("تم تحديث الموعد بنجاح!");
         }
@@ -842,6 +903,7 @@
         if (confirm("هل تريد حذف هذا الموعد نهائياً؟")) {
             customSchedules.splice(index, 1);
             localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
+            commitChanges();
             renderStudentSchedule();
         }
     }
@@ -875,8 +937,7 @@
 
     function studentLoginByCode(codeToTest) {
         let code = codeToTest || document.getElementById('loginStudentCode').value.trim();
-        let cleanCode = extractStudentCode(code);
-        let student = students.find(s => s.id === cleanCode);
+        let student = students.find(s => s.id === code);
         if (!student) {
             alert("كود الطالب غير صحيح أو غير مسجل بالسنتر!");
             return;
@@ -886,7 +947,7 @@
 
         document.getElementById('studentLoginBox').style.display = 'none';
         document.getElementById('studentDashboardArea').style.display = 'block';
-        document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟[cite: 1]`;
+        document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
         document.getElementById('studentProfileDetails').innerHTML = `
             <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
             <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
@@ -912,14 +973,25 @@
             isScannerOpen = true;
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 180, height: 180 } }, (text) => {
-                let cleanCode = extractStudentCode(text);
+                let cleanCode = text.trim();
+                if (text.includes("code=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                } else if (text.includes("id=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                }
                 let student = students.find(s => s.id === cleanCode);
                 if (student) {
                     currentLoggedInStudent = student;
                     if (isScannerOpen && html5QrCode) { html5QrCode.stop().catch(err => {}); cont.style.display = 'none'; isScannerOpen = false; }
                     document.getElementById('studentLoginBox').style.display = 'none';
                     document.getElementById('studentDashboardArea').style.display = 'block';
-                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟[cite: 1]`;
+                    document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
                     document.getElementById('studentProfileDetails').innerHTML = `
                         <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'الكل'}<br>
                         <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
@@ -950,7 +1022,18 @@
             isAdminScannerOpen = true;
             adminHtml5QrCode = new Html5Qrcode("adminReader");
             adminHtml5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 200, height: 200 } }, (text) => {
-                let cleanCode = extractStudentCode(text);
+                let cleanCode = text.trim();
+                if (text.includes("code=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                } else if (text.includes("id=")) {
+                    try {
+                        let urlObj = new URL(text);
+                        cleanCode = urlObj.searchParams.get("id") || text;
+                    } catch(e) {}
+                }
                 let student = students.find(s => s.id === cleanCode);
                 alertBox.style.display = 'block';
                 if (student) {
@@ -958,6 +1041,7 @@
                     localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
                     attRequests.push({ name: student.name + ' (سكان السنتر الفوري)', time: new Date().toLocaleTimeString() });
                     localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+                    commitChanges();
                     updateAdminDashboard();
                     
                     if (student.due > 0) {
@@ -996,6 +1080,7 @@
         box.style.display = 'block';
         attRequests.push({ name: currentLoggedInStudent.name, time: new Date().toLocaleTimeString() });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+        commitChanges();
 
         if (currentLoggedInStudent.due > 0) {
             box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
@@ -1011,6 +1096,7 @@
         box.style.display = 'block';
         attRequests.push({ name: student.name + ' (دخول مباشر بالكيو آر)', time: new Date().toLocaleTimeString() });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+        commitChanges();
 
         if (student.due > 0) {
             box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
@@ -1032,6 +1118,7 @@
 
         payRequests.push({ studentIndex: students.indexOf(currentLoggedInStudent), name: currentLoggedInStudent.name, subject: subject, type: type, details: details, amount: val });
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
+        commitChanges();
 
         document.getElementById('receiptContent').innerHTML = `
             <b>الطالب:</b> ${currentLoggedInStudent.name}<br>
@@ -1068,7 +1155,7 @@
                 <p><b>الموقف المالي والمتعلقات:</b> <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً ✓'}</span></p>
                 <p><b>عدد مرات الحضور المسجلة:</b> ${studentAtts.length} مرة</p>
             </div>
-            <button class="btn-custom" onclick="printStudentProfile('${s.id}')" style="background:#7c3aed; margin-top:8px; max-width:200px;">🖨️ طباعة تفاصيل هذا الطالب[cite: 1]</button>
+            <button class="btn-custom" onclick="printStudentProfile('${s.id}')" style="background:#7c3aed; margin-top:8px; max-width:200px;">🖨️ طباعة تفاصيل هذا الطالب</button>
         `;
     }
 
@@ -1082,7 +1169,7 @@
             <style>body { font-family: 'Cairo', Arial; padding: 20px; } .card { border: 2px solid #333; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; } h2 { color: #1d4ed8; text-align: center; }</style>
             </head><body>
             <div class="card">
-                <h2>منصة مستر يسر الموافي - ملف الطالب[cite: 1]</h2><hr>
+                <h2>منصة مستر يسر الموافي - ملف الطالب</h2><hr>
                 <p><b>اسم الطالب:</b> ${s.name}</p><p><b>كود السنتر:</b> ${s.id}</p>
                 <p><b>المادة:</b> ${s.subject || 'الكل'}</p><p><b>رقم الهاتف:</b> ${s.phone || 'بدون'}</p>
                 <p><b>الموقف المالي:</b> ${s.due > 0 ? s.due + ' ج.م (عليك متأخرات)' : 'خالص تماماً ✓'}</p>
@@ -1105,8 +1192,8 @@
             let student = students.find(s => s.id === editId);
             if (student) { student.name = name; student.phone = phone; student.subject = subject; student.due = due; }
             document.getElementById('editStudentId').value = '';
-            document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد[cite: 1]';
-            document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود[cite: 1]';
+            document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
+            document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود';
             alert("تم تحديث البيانات بنجاح!");
         } else {
             let id = 'STU_' + Math.floor(100000 + Math.random() * 900000);
@@ -1117,6 +1204,7 @@
             alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
         }
         localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+        commitChanges();
         document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = '';
         updateAdminDashboard();
     }
@@ -1130,7 +1218,7 @@
         document.getElementById('newSSubject').value = student.subject || 'محاسبة مالية وإدارة أعمال';
         document.getElementById('newSDueManual').value = student.due;
         document.getElementById('studentFormTitle').innerText = `✏️ تعديل: ${student.name}`;
-        document.getElementById('studentSubmitBtn').innerText = 'تحديث البيانات[cite: 1]';
+        document.getElementById('studentSubmitBtn').innerText = 'تحديث البيانات';
         window.scrollTo({ top: 200, behavior: 'smooth' });
     }
 
@@ -1138,6 +1226,7 @@
         if (confirm("هل تريد حذف هذا الطالب نهائياً؟")) {
             students = students.filter(s => s.id !== id);
             localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+            commitChanges();
             updateAdminDashboard();
         }
     }
@@ -1156,6 +1245,7 @@
 
         student.due += amount;
         localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+        commitChanges();
         updateAdminDashboard();
 
         let phone = student.phone ? student.phone.replace(/^0+/, '20') : '';
@@ -1171,6 +1261,7 @@
     function approveAtt(i) {
         attRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+        commitChanges();
         updateAdminDashboard();
         alert("تم قبول وتأكيد الحضور!");
     }
@@ -1178,6 +1269,7 @@
     function rejectAtt(i) {
         attRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+        commitChanges();
         updateAdminDashboard();
         alert("تم رفض طلب الحضور!");
     }
@@ -1196,6 +1288,7 @@
         localStorage.setItem('ysr_sys_inc_2027', income);
         localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
+        commitChanges();
         updateAdminDashboard();
         alert("تم اعتماد الدفع وتحديث الإيرادات والديون بنجاح!");
     }
@@ -1203,6 +1296,7 @@
     function rejectPay(i) {
         payRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
+        commitChanges();
         updateAdminDashboard();
         alert("تم رفض إيصال الدفع!");
     }
@@ -1217,6 +1311,7 @@
         localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(expensesLog));
 
         localStorage.setItem('ysr_sys_exp_2027', expenses);
+        commitChanges();
         document.getElementById('expValManual').value = '';
         updateAdminDashboard();
         alert(`تم حفظ المصروف العام بقيمة ${v} ج.م بنجاح!`);
@@ -1231,6 +1326,7 @@
             localStorage.setItem('ysr_sys_pay_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
+            commitChanges();
             updateAdminDashboard();
             alert("تم تصفير السيستم بنجاح وبقيت بيانات الطلاب محفوظة.");
         }
@@ -1238,7 +1334,7 @@
 
     function exportToExcel() {
         let tableHTML = `<html dir="rtl"><head><meta charset="UTF-8"></head><body>`;
-        tableHTML += `<h3>تقرير طلاب وإيرادات سنتر مستر يسر الموافي (بكالوريا 2027)[cite: 1]</h3>`;
+        tableHTML += `<h3>تقرير طلاب وإيرادات سنتر مستر يسر الموافي (بكالوريا 2027)</h3>`;
         tableHTML += document.querySelector('#adminTab .card-box table').outerHTML;
         tableHTML += `</body></html>`;
         let blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
@@ -1280,8 +1376,8 @@
 
         let chargeSelect = document.getElementById('chargeStudentSelect');
         let searchSelect = document.getElementById('searchStudentSelect');
-        let chargeOptions = '<option value="">اختر الطالب...[cite: 1]</option>';
-        let searchOptions = '<option value="">اختر اسم الطالب للبحث...[cite: 1]</option>';
+        let chargeOptions = '<option value="">اختر الطالب...</option>';
+        let searchOptions = '<option value="">اختر اسم الطالب للبحث...</option>';
         
         students.forEach(s => {
             chargeOptions += `<option value="${s.id}">${s.name} (${s.id})</option>`;
@@ -1299,13 +1395,13 @@
                 <td>${item.time}</td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="approveAtt(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">قبول[cite: 1]</button>
-                        <button onclick="rejectAtt(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">رفض[cite: 1]</button>
+                        <button onclick="approveAtt(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">قبول</button>
+                        <button onclick="rejectAtt(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">رفض</button>
                     </div>
                 </td>
             </tr>`;
         });
-        document.getElementById('attTable').innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور[cite: 1]</td></tr>';
+        document.getElementById('attTable').innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور</td></tr>';
 
         let pHtml = '';
         payRequests.forEach((item, i) => {
@@ -1314,13 +1410,13 @@
                 <td><b>${item.amount} ج.م</b></td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="approvePay(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">اعتماد[cite: 1]</button>
-                        <button onclick="rejectPay(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">رفض[cite: 1]</button>
+                        <button onclick="approvePay(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">اعتماد</button>
+                        <button onclick="rejectPay(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">رفض</button>
                     </div>
                 </td>
             </tr>`;
         });
-        document.getElementById('payTable').innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات دفع[cite: 1]</td></tr>';
+        document.getElementById('payTable').innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات دفع</td></tr>';
 
         let sHtml = '';
         students.forEach((s, idx) => {
@@ -1335,19 +1431,19 @@
                 <td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="sendWhatsappMsg(${idx}, 'welcome'); playClickSound();" style="background:#0284c7; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">ترحيب[cite: 1]</button>
-                        <button onclick="sendWhatsappMsg(${idx}, 'due'); playClickSound();" style="background:#eab308; color:#0f172a; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">تنبيه[cite: 1]</button>
+                        <button onclick="sendWhatsappMsg(${idx}, 'welcome'); playClickSound();" style="background:#0284c7; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">ترحيب</button>
+                        <button onclick="sendWhatsappMsg(${idx}, 'due'); playClickSound();" style="background:#eab308; color:#0f172a; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">تنبيه</button>
                     </div>
                 </td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تعديل[cite: 1]</button>
-                        <button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">حذف[cite: 1]</button>
+                        <button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تعديل</button>
+                        <button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">حذف</button>
                     </div>
                 </td>
             </tr>`;
         });
-        document.getElementById('studentsListTable').innerHTML = sHtml || '<tr><td colspan="8">لا يوجد طلاب مسجلين[cite: 1]</td></tr>';
+        document.getElementById('studentsListTable').innerHTML = sHtml || '<tr><td colspan="8">لا يوجد طلاب مسجلين</td></tr>';
     }
 </script>
 
