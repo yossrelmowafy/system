@@ -439,7 +439,7 @@
                 </div>
             </div>
 
-            <!-- بطاقات الإحصائيات الشاملة (الإيرادات، المصروفات، الربح، عدد الطلاب، وسجل الحضور) -->
+            <!-- بطاقات الإحصائيات الشاملة -->
             <div class="stats-grid">
                 <div class="stat-card"><h4>الإيرادات</h4><span id="totInc">0</span> ج.م</div>
                 <div class="stat-card"><h4>المصاريف العامة</h4><span id="totExp">0</span> ج.م</div>
@@ -833,13 +833,13 @@
         <hr>
         <h3>سجل الطلاب الحاضرين:</h3>
         <table>
-        <thead><tr><th>م</th><th>اسم الطالب</th><th>وقت الحضور</th></tr></thead>
+        <thead><tr><th>م</th><th>اسم الطالب</th><th>تاريخ الحضور</th><th>وقت الحضور</th></tr></thead>
         <tbody>`;
         if(attRequests.length === 0) {
-            html += `<tr><td colspan="3">لا توجد سجلات حضور معتمدة حالياً</td></tr>`;
+            html += `<tr><td colspan="4">لا توجد سجلات حضور معتمدة حالياً</td></tr>`;
         } else {
             attRequests.forEach((item, idx) => {
-                html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.time}</td></tr>`;
+                html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.date || '-'}</td><td>${item.time}</td></tr>`;
             });
         }
         html += `</tbody></table><script>window.print();<\/script></body></html>`;
@@ -1037,19 +1037,28 @@
                 let student = students.find(s => s.id === cleanCode);
                 alertBox.style.display = 'block';
                 if (student) {
-                    let todayStr = new Date().toLocaleDateString('ar-EG');
-                    let alreadyAttendedToday = attRequests.some(a => a.studentId === student.id && a.date === todayStr);
-
+                    let currentDateStr = new Date().toLocaleDateString('ar-EG');
+                    let alreadyAttendedToday = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
+                    
                     if (alreadyAttendedToday) {
-                        alertBox.style.background = 'rgba(153, 27, 27, 0.9)'; 
-                        alertBox.style.color = '#f87171';
-                        alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> قام بتسجيل الحضور مسبقاً اليوم (${todayStr}) ولا يمكنه التكرار!`;
+                        alertBox.style.background = 'rgba(120, 53, 15, 0.9)'; 
+                        alertBox.style.color = '#fde047';
+                        alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> قد سجل حضوره بالفعل اليوم (${currentDateStr}) ولا يمكن تسجيله مرتين في نفس اليوم!`;
                         return;
                     }
 
+                    // إزالة أي طلب قديم مرفوض أو متعلق بنفس الطالب تماماً ليظهر الطلب الجديد فقط
+                    attRequests = attRequests.filter(item => item.studentId !== student.id);
+
                     student.absentCount = 0;
                     localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-                    attRequests.push({ studentId: student.id, name: student.name + ' (سكان السنتر الفوري)', time: new Date().toLocaleTimeString(), date: todayStr });
+                    
+                    attRequests.push({ 
+                        studentId: student.id, 
+                        name: student.name + ' (سكان السنتر الفوري)', 
+                        date: currentDateStr, 
+                        time: new Date().toLocaleTimeString() 
+                    });
                     localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
                     commitChanges();
                     updateAdminDashboard();
@@ -1089,24 +1098,31 @@
         let box = document.getElementById('studentAlert');
         box.style.display = 'block';
 
-        let todayStr = new Date().toLocaleDateString('ar-EG');
-        let alreadyAttendedToday = attRequests.some(a => a.studentId === currentLoggedInStudent.id && a.date === todayStr);
+        let currentDateStr = new Date().toLocaleDateString('ar-EG');
+        let alreadyAttendedToday = attRequests.some(item => item.studentId === currentLoggedInStudent.id && item.date === currentDateStr);
 
         if (alreadyAttendedToday) {
-            box.style.background = 'rgba(153, 27, 27, 0.9)'; 
-            box.style.color = '#f87171';
-            let dueMsg = currentLoggedInStudent.due > 0 ? `<br>⚠️ تنبيه: يوجد عليك مصروفات/ديون مستحقة بقيمة <b>${currentLoggedInStudent.due} ج.م</b>` : '';
-            box.innerHTML = `❌ عذراً يا ${currentLoggedInStatusName = currentLoggedInStudent.name}، لقد قمت بتسجيل حضورك بالفعل اليوم (${todayStr}) ولا يمكنك التسجيل مرتين.${dueMsg}`;
+            box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
+            box.innerHTML = `⚠️ عذراً يا ${currentLoggedInStudent.name}، لقد قمت بتسجيل حضورك اليوم بالفعل ولا يمكنك التسجيل مرتين في نفس اليوم!`;
             return;
         }
 
-        attRequests.push({ studentId: currentLoggedInStudent.id, name: currentLoggedInStudent.name, time: new Date().toLocaleTimeString(), date: todayStr });
+        // مسح أي طلب قديم مرفوض أو موجود لنفس الطالب تماماً بحيث لا يظهر سوى الطلب الجديد
+        attRequests = attRequests.filter(item => item.studentId !== currentLoggedInStudent.id);
+
+        attRequests.push({ 
+            studentId: currentLoggedInStudent.id, 
+            name: currentLoggedInStudent.name, 
+            date: currentDateStr, 
+            time: new Date().toLocaleTimeString() 
+        });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
+        updateAdminDashboard();
 
         if (currentLoggedInStudent.due > 0) {
             box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
-            box.innerHTML = `تم تسجيل حضورك بنجاح! ⚠️ <b>برجاء سداد مبلغ بقيمة ${currentLoggedInStudent.due} ج.م</b> (طلبك قيد المراجعة لدى مستر يسر الموافي).`;
+            box.innerHTML = `تم تسجيل حضورك بنجاح! ⚠️ <b>عليك مبالغ مالية بقيمة ${currentLoggedInStudent.due} ج.م</b> (طلبك قيد المراجعة لدى مستر يسر الموافي).`;
         } else {
             box.style.background = 'rgba(6, 78, 59, 0.9)'; box.style.color = '#4ade80';
             box.innerText = `أهلاً بك يا ${currentLoggedInStudent.name}، تم تسجيل حضورك اليوم بنجاح وطلبك قيد المراجعة ✓`;
@@ -1117,24 +1133,31 @@
         let box = document.getElementById('studentAlert');
         box.style.display = 'block';
 
-        let todayStr = new Date().toLocaleDateString('ar-EG');
-        let alreadyAttendedToday = attRequests.some(a => a.studentId === student.id && a.date === todayStr);
+        let currentDateStr = new Date().toLocaleDateString('ar-EG');
+        let alreadyAttendedToday = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
 
         if (alreadyAttendedToday) {
-            box.style.background = 'rgba(153, 27, 27, 0.9)'; 
-            box.style.color = '#f87171';
-            let dueMsg = student.due > 0 ? `<br>⚠️ تنبيه: يوجد عليك مصروفات/ديون مستحقة بقيمة <b>${student.due} ج.م</b>` : '';
-            box.innerHTML = `❌ عذراً يا ${student.name}، لقد قمت بتسجيل حضورك بالفعل اليوم (${todayStr}) ولا يمكنك التسجيل مرتين.${dueMsg}`;
+            box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
+            box.innerHTML = `⚠️ عذراً يا ${student.name}، لقد قمت بتسجيل حضورك اليوم بالفعل ولا يمكنك التسجيل مرتين في نفس اليوم!`;
             return;
         }
 
-        attRequests.push({ studentId: student.id, name: student.name + ' (دخول مباشر بالكيو آر)', time: new Date().toLocaleTimeString(), date: todayStr });
+        // مسح أي طلب قديم مرفوض أو معلق سابق لنفس الطالب لضمان ظهور الطلب الجديد فقط
+        attRequests = attRequests.filter(item => item.studentId !== student.id);
+
+        attRequests.push({ 
+            studentId: student.id, 
+            name: student.name + ' (دخول مباشر بالكيو آر)', 
+            date: currentDateStr, 
+            time: new Date().toLocaleTimeString() 
+        });
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
+        updateAdminDashboard();
 
         if (student.due > 0) {
             box.style.background = 'rgba(120, 53, 15, 0.9)'; box.style.color = '#fde047';
-            box.innerHTML = `تم تسجيل حضورك تلقائياً بنجاح! ⚠️ <b>برجاء سداد مبلغ بقيمة ${student.due} ج.م</b> (طلبك قيد المراجعة لدى مستر يسر الموافي).`;
+            box.innerHTML = `تم تسجيل حضورك تلقائياً بنجاح! ⚠️ <b>عليك مبالغ مالية بقيمة ${student.due} ج.م</b> (طلبك قيد المراجعة لدى مستر يسر الموافي).`;
         } else {
             box.style.background = 'rgba(6, 78, 59, 0.9)'; box.style.color = '#4ade80';
             box.innerText = `أهلاً بك يا ${student.name}، تم تسجيل حضورك اليوم تلقائياً بنجاح ✓`;
@@ -1305,7 +1328,7 @@
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
         updateAdminDashboard();
-        alert("تم رفض طلب الحضور!");
+        alert("تم رفض طلب الحضور وحذفه تماماً!");
     }
 
     function approvePay(i) {
@@ -1328,12 +1351,11 @@
     }
 
     function rejectPay(i) {
-        // حذف طلب الدفع المرفوض تماماً من المصفوفة لضمان عدم ظهوره مجدداً
         payRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
         commitChanges();
         updateAdminDashboard();
-        alert("تم رفض طلب الدفع وحذفه تماماً من السجل!");
+        alert("تم رفض إيصال الدفع وحذفه تماماً!");
     }
 
     function addExpense() {
@@ -1426,7 +1448,7 @@
         let aHtml = '';
         attRequests.forEach((item, i) => {
             aHtml += `<tr>
-                <td><b>${item.name}</b></td>
+                <td><b>${item.name}</b><br><small style="color:var(--text-muted);">${item.date || ''} - ${item.time}</small></td>
                 <td>${item.time}</td>
                 <td>
                     <div class="action-btns">
@@ -1484,4 +1506,3 @@
 
 </body>
 </html>
-```[cite: 4]
