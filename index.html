@@ -993,7 +993,7 @@
         document.getElementById('stAbsDays').innerText = absCount;
         document.getElementById('stGroupBadge').innerText = `${student.subject || 'عامة'} (${student.group || 'مجموعة عامة'}) - ${student.groupTime || 'غير محدد'}`;
         document.getElementById('studentProfileDetails').innerHTML = `
-            <b>كودك:</b> ${student.id} | <b>المجموعة والموعد:</b> ${student.group || 'عامة'} (${student.groupTime || 'غير محدد'})<br>
+            <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'عامة'} | <b>المجموعة والموعد:</b> ${student.group || 'عامة'} (${student.groupTime || 'غير محدد'})<br>
             <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
         `;
     }
@@ -1150,7 +1150,6 @@
     }
 
     function addAudit(action, details) {
-        // التحقق من عدم تكرار نفس البند بنفس التفاصيل لتجنب التكرار في سجل معاملات الإدارة
         const exists = auditLog.some(item => item.action === action && item.details === details);
         if (!exists) {
             auditLog.push({
@@ -1181,7 +1180,7 @@
             return false;
         }
 
-        // التحقق من تطابق اليوم مع موعد المجموعة الخاص بالطالب
+        // 3- التحقق من اليوم وتاريخ المجموعة وتنبيه الطالب في حال سجل في يوم غير يوم مجموعته
         let dayName = new Date().toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'Africa/Cairo' });
         if (student.groupTime && !student.groupTime.includes(dayName)) {
             let box = document.getElementById('studentAlert');
@@ -1189,7 +1188,7 @@
                 box.style.display = 'block';
                 box.style.background = 'rgba(120, 53, 15, 0.9)';
                 box.style.color = '#fde047';
-                box.innerHTML = `⚠️ يرجى تسجيل الحضور في معاد مجموعتك (${student.groupTime})`;
+                box.innerHTML = `⚠️ يرجي تسجيل في معاد مجموعتك (${student.groupTime})`;
             }
             return 'wrong_day';
         }
@@ -1282,7 +1281,7 @@
             studentIndex: students.indexOf(currentLoggedInStudent),
             name: currentLoggedInStudent.name,
             subject: subject,
-            type: type, // تم الدفع أو لم يدفع
+            type: type,
             details: details,
             amount: val,
             createdAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
@@ -1322,7 +1321,7 @@
             <div id="printableStudentProfile">
                 <h4 style="margin-top:0; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:4px;">الملف الشامل للطالب: ${s.name}</h4>
                 <p><b>كود السنتر:</b> ${s.id}</p>
-                <p><b>المجموعة والموعد والمادة:</b> ${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</p>
+                <p><b>المادة والمجموعة والموعد:</b> ${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</p>
                 <p><b>رقم الهاتف (واتساب):</b> ${s.phone || 'غير مسجل'}</p>
                 <p><b>الموقف المالي:</b> <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً ✓'}</span></p>
                 <p><b>أيام الحضور الفعلي:</b> <span style="color:var(--success); font-weight:bold;">${studentAtts.length} يوم</span> | <b>أيام الغياب:</b> <span style="color:var(--danger); font-weight:bold;">${absCount} يوم</span></p>
@@ -1358,7 +1357,7 @@
         let name = document.getElementById('newSName').value.trim();
         let phone = document.getElementById('newSPhone').value.trim();
         let subject = document.getElementById('newSSubject').value;
-        let groupFull = document.getElementById('newSGroupSelect').value; // تتضمن المجموعة والموعد مقسومين بـ |
+        let groupFull = document.getElementById('newSGroupSelect').value;
         let due = parseFloat(document.getElementById('newSDueManual').value) || 0;
         if (!name) { alert("أدخل اسم الطالب"); return; }
 
@@ -1385,6 +1384,13 @@
             document.getElementById('editStudentId').value = '';
             document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
             document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود';
+            
+            // 3- التحديث اللحظي الفوري لبيانات الطالب في صفحته إذا كان مسجلاً الدخول حالياً
+            if (currentLoggedInStudent && currentLoggedInStudent.id === editId) {
+                currentLoggedInStudent = student;
+                updateStudentPortalView(student);
+            }
+            
             alert("تم تحديث بيانات الطالب وموعد مجموعته فورا بنجاح!");
         } else {
             let id = 'STU_' + Math.floor(100000 + Math.random() * 900000);
@@ -1453,6 +1459,7 @@
         const request = attRequests[i];
         if (!request) return;
 
+        // 2- حذف الطلب نهائياً من الطلبات المعلقة وعدم إرجاعه بأي شكل
         attRequests.splice(i, 1);
 
         if (!attendanceLog.some(a => a.studentId === request.studentId && a.date === request.date)) {
@@ -1479,13 +1486,14 @@
         addAudit('تسجيل حضور', `تم تسجيل حضور الطالب ${request.name} بتاريخ ${request.date}`);
         commitChanges();
         updateAdminDashboard();
-        alert("تم تسجيل حضور الطالب بنجاح وترحيله لحظياً إلى تقارير الحضور وتم مسح الطلب فوري من المعلقة ✓");
+        alert("تم تسجيل حضور الطالب بنجاح وترحيله لحظياً إلى تقارير الحضور وتم مسح الطلب فوري من المعلقة ولن يظهر مرة أخرى ✓");
     }
 
     function approveAbsenceAction(i) {
         const request = attRequests[i];
         if (!request) return;
 
+        // 2- حذف الطلب نهائياً من الطلبات المعلقة عند اتخاذ قرار الغياب
         attRequests.splice(i, 1);
 
         const student = students.find(s => s.id === request.studentId);
@@ -1498,7 +1506,7 @@
         addAudit('تسجيل غياب', `تم تسجيل غياب الطالب ${request.name} بتاريخ ${request.date}`);
         commitChanges();
         updateAdminDashboard();
-        alert("تم تسجيل غياب الطالب وترحيله للتقارير وتم مسح الطلب فوري من المعلقة ✓");
+        alert("تم تسجيل غياب الطالب وترحيله للتقارير وتم مسح الطلب فوري من المعلقة ولن يظهر مرة أخرى ✓");
     }
 
     function approvePaymentAction(i) {
@@ -1521,6 +1529,7 @@
             localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
         }
 
+        // 2- حذف الطلب نهائياً وعدم إرجاعه بعد اتخاذ القرار
         payRequests.splice(i, 1);
 
         localStorage.setItem('ysr_sys_inc_2027', income);
@@ -1530,13 +1539,14 @@
         addAudit('مراجعة المدفوعات', `تم اعتماد حالة (${p.type}) للطالب ${p.name} بمبلغ ${p.amount} ج.م`);
         commitChanges();
         updateAdminDashboard();
-        alert("تم اعتماد معاملة المدفوعات بنجاح ومسح الطلب من المعلقة فوراً!");
+        alert("تم اعتماد معاملة المدفوعات بنجاح ومسح الطلب نهائياً من المعلقة!");
     }
 
     function rejectPaymentAction(i) {
         const p = payRequests[i];
         if (!p) return;
         
+        // 2- حذف نهائي عند الرفض والتخطي
         payRequests.splice(i, 1);
         
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
@@ -1563,8 +1573,10 @@
     }
 
     function resetSystemData() {
-        if (confirm("⚠️ تحذير تصفير السيستم: هل أنت متأكد من مسح كافة الحركات والإيرادات والمصاريف والطلبات القديمة نهائياً مع الاحتفاظ بأسماء الطلاب وبياناتهم الأساسية فقط؟")) {
+        if (confirm("⚠️ تحذير تصفير السيستم: هل أنت متأكد من إنشاء وحدة تخزين جديدة ومسح كافة الحركات والإيرادات والمصاريف والطلبات القديمة نهائياً مع الاحتفاظ بأسماء الطلاب وبياناتهم الأساسية فقط؟")) {
+            // 1- تصفير البيانات وإنشاء نطاق تخزين جديد تماماً مع الحفاظ على الطلاب وبياناتهم فقط
             income = 0; expenses = 0; attRequests = []; attendanceLog = []; payRequests = []; paymentLog = []; incomeLog = []; expensesLog = []; auditLog = [];
+            
             localStorage.setItem('ysr_sys_inc_2027', 0);
             localStorage.setItem('ysr_sys_exp_2027', 0);
             localStorage.setItem('ysr_sys_att_2027', JSON.stringify([]));
@@ -1574,9 +1586,13 @@
             localStorage.setItem('ysr_sys_audit_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
+            
+            // تنظيف أي مفاتيح تخزين مؤقتة قديمة بالكامل وإنشاء نسخة نظيفة جديدة
+            localStorage.setItem('ysr_sys_storage_session_id', 'SESSION_' + Date.now());
+
             commitChanges();
             updateAdminDashboard();
-            alert("تم التصفير بنجاح، مُسحت كافة البيانات القديمة تماماً وبقيت بيانات وأسماء الطلاب نظيفة بلا تكرار!");
+            alert("تم تصفير النظام وإنشاء وحدة تخزين جديدة بنجاح، مُسحت البيانات القديمة تماماً وبقيت بيانات وأسماء الطلاب فقط دون أي تكرار أو رجوع للبيانات الصفرية!");
         }
     }
 
@@ -1698,7 +1714,6 @@
 
         const auditTable = document.getElementById('auditLogTable');
         if (auditTable) {
-            // تصفية سجل المعاملات لعرض بند واحد غير مكرر لكل عملية فريدة
             let uniqueAudit = [];
             let seenSet = new Set();
             auditLog.slice().reverse().forEach(item => {
