@@ -45,7 +45,8 @@ if (typeof onDataLoaded === 'function') onDataLoaded();
 });
 };
 
-window.saveSystemDataToCloud = function() {
+window.saveSystemDataToCloud = function(nodes) {
+if (!nodes) {
 const payload = {
 students: JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]'),
 attRequests: JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]'),
@@ -58,6 +59,27 @@ expensesLog: JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]'),
 customSchedules: JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]'),
 paymentLog: JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]'),
 auditLog: JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]')
+};
+set(ref(db, 'systemData'), payload);
+return;
+}
+const nodeList = Array.isArray(nodes) ? nodes : [nodes];
+nodeList.forEach(node => {
+const dbRef = ref(db, 'systemData/' + node);
+let val;
+if (node === 'students') val = JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]');
+else if (node === 'attRequests') val = JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]');
+else if (node === 'attendanceLog') val = JSON.parse(localStorage.getItem('ysr_sys_att_log_2027') || '[]');
+else if (node === 'payRequests') val = JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]');
+else if (node === 'income') val = parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0');
+else if (node === 'expenses') val = parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0');
+else if (node === 'incomeLog') val = JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]');
+else if (node === 'expensesLog') val = JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]');
+else if (node === 'customSchedules') val = JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]');
+else if (node === 'paymentLog') val = JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]');
+else if (node === 'auditLog') val = JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]');
+set(dbRef, val);
+});
 };
 set(ref(db, 'systemData'), payload);
 };
@@ -517,6 +539,28 @@ transition: 0.4s ease-in-out;
 </div>
 </div>
 
+<!-- قسم تسجيل دفعة نقدية كاش مباشرة -->
+<div class="card-box" style="border: 2px solid var(--success); margin-top: 10px;">
+<h3>💵 تسجيل دفعة نقدية (كاش) وتخفيض الديون فوراً</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+<div>
+<label style="font-size:11px; color:var(--text-muted);">الطالب:</label>
+<select id="payStudentSelect" style="margin: 4px 0 10px 0;">
+<option value="">اختر الطالب...</option>
+</select>
+</div>
+<div>
+<label style="font-size:11px; color:var(--text-muted);">المبلغ المدفوع (بالجنيه):</label>
+<input type="number" id="payAmountDirect" placeholder="المبلغ المدفوع (مثلاً: 50)" style="margin: 4px 0 10px 0;">
+</div>
+</div>
+<div>
+<label style="font-size:11px; color:var(--text-muted);">تفاصيل الدفع:</label>
+<input type="text" id="payDetailsDirect" placeholder="تفاصيل الدفع (مثلاً: شهر يناير كاش)" style="margin: 4px 0 10px 0;">
+</div>
+<button class="btn-custom" onclick="recordDirectPayment(); playClickSound();" style="background: var(--success); max-width: 280px;">تسجيل الدفع وتخفيض ديون الطالب فوراً</button>
+</div>
+
 <!-- قسم ضبط المجموعات والمواعيد الذكية -->
 <div class="card-box" style="border: 2px solid var(--success);">
 <h3>📅 نظام المجموعات والمواعيد (تحديد المادة، اسم المجموعة، اليوم والساعة)</h3>
@@ -777,10 +821,101 @@ let isScannerOpen = false;
 let adminHtml5QrCode = null;
 let isAdminScannerOpen = false;
 
-function commitChanges() {
+function commitChanges(nodes) {
 if (typeof window.saveSystemDataToCloud === 'function') {
-window.saveSystemDataToCloud();
+window.saveSystemDataToCloud(nodes);
 }
+}
+
+function manualAttendStudent(id) {
+let student = students.find(s => s.id === id);
+if (!student) return;
+let currentDateStr = new Date().toLocaleDateString('ar-EG');
+let alreadyAttendedToday = attendanceLog.some(item => item.studentId === student.id && item.date === currentDateStr);
+if (alreadyAttendedToday) {
+alert(`⚠️ الطالب ${student.name} مسجل حضور بالفعل اليوم!`);
+return;
+}
+
+attendanceLog.push({
+attendanceId: 'ATT_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+studentId: student.id,
+name: student.name,
+method: 'تسجيل يدوي من الإدارة',
+date: currentDateStr,
+time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
+approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
+status: 'approved'
+});
+
+student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
+
+localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
+localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+
+addAudit('تسجيل حضور', `تم تسجيل حضور يدوي للطالب ${student.name}`);
+commitChanges(['attendanceLog', 'students', 'auditLog']);
+updateAdminDashboard();
+alert(`✅ تم تسجيل حضور الطالب ${student.name} مباشرة وتحديث التقارير!`);
+}
+
+function manualAbsentStudent(id) {
+let student = students.find(s => s.id === id);
+if (!student) return;
+
+student.absentDays = (student.absentDays || 0) + 1;
+
+localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+addAudit('تسجيل غياب', `تم تسجيل غياب يدوي للطالب ${student.name}`);
+commitChanges(['students', 'auditLog']);
+updateAdminDashboard();
+alert(`❌ تم تسجيل غياب يدوي للطالب ${student.name} (+1 يوم غياب) وتحديث التقارير!`);
+}
+
+function recordDirectPayment() {
+let selectEl = document.getElementById('payStudentSelect');
+let studentId = selectEl.value;
+let amount = parseFloat(document.getElementById('payAmountDirect').value);
+let details = document.getElementById('payDetailsDirect').value.trim() || 'دفع كاش مباشرة للإدارة';
+
+if (!studentId) { alert("اختر الطالب أولاً"); return; }
+if (isNaN(amount) || amount <= 0) { alert("أدخل مبلغ صحيح"); return; }
+
+let student = students.find(s => s.id === studentId);
+if (!student) return;
+
+student.due = Math.max(0, student.due - amount);
+income += amount;
+
+incomeLog.push({ 
+name: student.name, 
+subject: 'دفع كاش مباشر', 
+details: details, 
+amount: amount 
+});
+
+paymentLog = paymentLog || [];
+paymentLog.push({ 
+studentId: student.id, 
+name: student.name, 
+amount: amount, 
+type: 'تم الدفع', 
+paidAt: new Date().toLocaleString('ar-EG') 
+});
+
+localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+localStorage.setItem('ysr_sys_inc_2027', income);
+localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
+localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
+
+addAudit('تسجيل مدفوعات', `تم تسجيل دفع نقدي مباشر للطالب ${student.name} بمبلغ ${amount} ج.م`);
+commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
+updateAdminDashboard();
+
+document.getElementById('payAmountDirect').value = '';
+document.getElementById('payDetailsDirect').value = '';
+selectEl.value = '';
+alert(`✅ تم تسجيل الدفعة النقدية للطالب ${student.name} بقيمة ${amount} ج.م وتحديث حسابه والتقارير فوراً!`);
 }
 
 function getTodayEgyptDateKey() {
@@ -1109,33 +1244,38 @@ let student = students.find(s => s.id === cleanCode);
 alertBox.style.display = 'block';
 if (student) {
 let currentDateStr = new Date().toLocaleDateString('ar-EG');
-
-let alreadyHasActiveRequest = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
 let alreadyAttendedToday = attendanceLog.some(item => item.studentId === student.id && item.date === currentDateStr);
 
-if (alreadyHasActiveRequest || alreadyAttendedToday) {
+if (alreadyAttendedToday) {
 alertBox.style.background = 'rgba(120, 53, 15, 0.9)';
 alertBox.style.color = '#fde047';
-alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> لديه طلب مسجل مسبقاً أو تم تسسجيل حضوره اليوم (${currentDateStr}) ولا يمكن التكرار!`;
+alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> تم تسجيل حضوره اليوم بالفعل (${currentDateStr}) ولا يمكن التكرار!`;
 return;
 }
 
-attRequests.push({
-requestId: makeId('ATT'),
+attendanceLog.push({
+attendanceId: 'ATT_' + Date.now() + '_' + Math.floor(Math.random()*1000),
 studentId: student.id,
-name: student.name + ' (سكان السنتر الفوري)',
+name: student.name,
+method: 'سكان السنتر الفوري',
 date: currentDateStr,
-isoDate: getTodayEgyptDateKey(),
 time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
-status: 'pending'
+approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
+status: 'approved'
 });
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
-commitChanges();
+
+student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
+
+localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
+localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+
+addAudit('تسجيل حضور', `تم تسجيل حضور تلقائي للطالب ${student.name} عبر سكان السنتر الفوري`);
+commitChanges(['attendanceLog', 'students', 'auditLog']);
 updateAdminDashboard();
 
 alertBox.style.background = 'rgba(6, 78, 59, 0.9)';
 alertBox.style.color = '#4ade80';
-alertBox.innerHTML = `✅ تم إضافة طلب حضور الطالب: <b>${student.name}</b> بنجاح إلى الطلبات المعلقة ✓`;
+alertBox.innerHTML = `✅ تم تسجيل حضور الطالب: <b>${student.name}</b> مباشرة بنجاح وترحيله للتقارير ✓`;
 } else {
 alertBox.style.background = 'rgba(153, 27, 27, 0.9)';
 alertBox.style.color = '#f87171';
@@ -1225,7 +1365,7 @@ status: 'pending'
 });
 
 localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
-commitChanges();
+commitChanges('attRequests');
 updateAdminDashboard();
 return true;
 }
@@ -1306,7 +1446,7 @@ createdAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
 status: 'pending'
 });
 localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
-commitChanges();
+commitChanges('payRequests');
 
 document.getElementById('receiptContent').innerHTML = `
 <b>الطالب:</b> ${currentLoggedInStudent.name}<br>
@@ -1412,7 +1552,7 @@ new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 
 alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
 }
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges();
+commitChanges('students');
 document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = '';
 updateAdminDashboard();
 }
@@ -1435,7 +1575,7 @@ if (confirm("هل تريد حذف هذا الطالب نهائياً؟"))
 {
 students = students.filter(s => s.id !== id);
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges();
+commitChanges('students');
 updateAdminDashboard();
 }
 }
@@ -1454,7 +1594,7 @@ if (!student) return;
 
 student.due += amount;
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges();
+commitChanges('students');
 updateAdminDashboard();
 
 let phone = student.phone ? student.phone.replace(/^0+/, '20') : '';
@@ -1495,7 +1635,7 @@ localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
 localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
 addAudit('تسجيل حضور', `تم تسجيل حضور الطالب ${request.name} بتاريخ ${request.date}`);
-commitChanges();
+commitChanges(['attRequests', 'attendanceLog', 'students', 'auditLog']);
 updateAdminDashboard();
 alert("تم تسجيل حضور الطالب بنجاح وترحيله لحظياً إلى تقارير الحضور وتم مسح الطلب فوري من المعلقة ✓");
 }
@@ -1514,7 +1654,7 @@ student.absentDays = (student.absentDays || 0) + 1;
 localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
 addAudit('تسجيل غياب', `تم تسجيل غياب الطالب ${request.name} بتاريخ ${request.date}`);
-commitChanges();
+commitChanges(['attRequests', 'students', 'auditLog']);
 updateAdminDashboard();
 alert("تم تسجيل غياب الطالب وترحيله للتقارير وتم مسح الطلب فوري من المعلقة ✓");
 }
@@ -1546,7 +1686,7 @@ localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
 localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
 
 addAudit('مراجعة المدفوعات', `تم اعتماد حالة (${p.type}) للطالب ${p.name} بمبلغ ${p.amount} ج.م`);
-commitChanges();
+commitChanges(['incomeLog', 'paymentLog', 'income', 'students', 'payRequests', 'auditLog']);
 updateAdminDashboard();
 alert("تم اعتماد معاملة المدفوعات بنجاح ومسح الطلب من المعلقة فوراً!");
 }
@@ -1558,7 +1698,7 @@ if (!p) return;
 payRequests.splice(i, 1);
 
 localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
-commitChanges();
+commitChanges(['payRequests', 'auditLog']);
 updateAdminDashboard();
 addAudit('مراجعة المدفوعات', `تم رفض/تخطي طلب الدفع للطالب ${p && p.name ? p.name : 'غير معروف'}`);
 alert("تم إزالة الطلب نهائياً من قائمة المراجعة!");
@@ -1574,7 +1714,7 @@ expensesLog.push({ type: type, amount: v });
 localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(expensesLog));
 
 localStorage.setItem('ysr_sys_exp_2027', expenses);
-commitChanges();
+commitChanges(['expensesLog', 'expenses']);
 document.getElementById('expValManual').value = '';
 updateAdminDashboard();
 alert(`تم حفظ المصروف العام بقيمة ${v} ج.م بنجاح!`);
@@ -1701,16 +1841,20 @@ document.getElementById('totAttendance').innerText = attendanceLog.length;
 
 let chargeSelect = document.getElementById('chargeStudentSelect');
 let searchSelect = document.getElementById('searchStudentSelect');
+let payDirectSelect = document.getElementById('payStudentSelect');
 let chargeOptions = '<option value="">اختر الطالب...</option>';
 let searchOptions = '<option value="">اختر اسم الطالب للبحث...</option>';
+let payDirectOptions = '<option value="">اختر الطالب...</option>';
 
 students.forEach(s => {
 chargeOptions += `<option value="${s.id}">${s.name} (${s.id})</option>`;
 searchOptions += `<option value="${s.id}">${s.name} - (${s.subject || 'الكل'})</option>`;
+payDirectOptions += `<option value="${s.id}">${s.name} (${s.id})</option>`;
 });
 
 if (chargeSelect) chargeSelect.innerHTML = chargeOptions;
 if (searchSelect) searchSelect.innerHTML = searchOptions;
+if (payDirectSelect) payDirectSelect.innerHTML = payDirectOptions;
 renderStudentSchedule();
 
 let aHtml = '';
@@ -1788,9 +1932,15 @@ sHtml += `<tr style="${rowBg}">
 </div>
 </td>
 <td>
-<div class="action-btns">
-<button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تعديل</button>
-<button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">حذف</button>
+<div class="action-btns" style="display:flex; gap:2px; flex-direction:column; align-items:center;">
+<div style="display:flex; gap:2px; margin-bottom:2px;">
+<button onclick="manualAttendStudent('${s.id}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 6px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">حاضر ✓</button>
+<button onclick="manualAbsentStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 6px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">غياب ✗</button>
+</div>
+<div style="display:flex; gap:2px;">
+<button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">تعديل</button>
+<button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:#4b5563; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">حذف</button>
+</div>
 </div>
 </td>
 </tr>`;
