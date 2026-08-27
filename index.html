@@ -50,8 +50,6 @@
                 attRequests: JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]'),
                 attendanceLog: JSON.parse(localStorage.getItem('ysr_sys_att_log_2027') || '[]'),
                 payRequests: JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]'),
-                paymentLog: JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]'),
-                auditLog: JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]'),
                 income: parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0'),
                 expenses: parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0'),
                 incomeLog: JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]'),
@@ -366,15 +364,12 @@
                 <div>
                     <div class="card-box" style="margin-bottom: 10px;">
                         <h3>1️⃣ تسجيل الحضور الفوري</h3>
-                        <div style="display: flex; gap: 6px;">
-                            <button class="btn-custom" onclick="doStudentAttendanceChoice('حضور'); playClickSound();" style="background: var(--success);">تسجيل حضور اليوم ✓</button>
-                            <button class="btn-custom" onclick="doStudentAttendanceChoice('غياب'); playClickSound();" style="background: var(--danger);">تسجيل غياب اليوم ✕</button>
-                        </div>
+                        <button class="btn-custom" onclick="doStudentAttendance(); playClickSound();" style="background: var(--success);">تسجيل حضور اليوم للحصة ✓</button>
                         <div id="studentAlert" class="alert-custom"></div>
                     </div>
 
                     <div class="card-box">
-                        <h3>2️⃣ دفع المصروفات وإرسال الإيصال</h3>
+                        <h3>2️⃣ دفع المصروفات وإرسال الطلب</h3>
                         <select id="paySubject">
                             <option value="محاسبة مالية">محاسبة مالية</option>
                             <option value="إدارة أعمال">إدارة أعمال</option>
@@ -386,7 +381,7 @@
                         </select>
                         <input type="text" id="payDetails" placeholder="تفاصيل (مثلاً: شهر يناير)">
                         <input type="number" id="payVal" placeholder="المبلغ المدفوع (بالجنيه)">
-                        <button class="btn-custom" onclick="sendPaymentRequest(); playClickSound();">تأكيد الدفع وإرسال الإيصال</button>
+                        <button class="btn-custom" onclick="sendPaymentRequest(); playClickSound();">تأكيد وإرسال طلب الدفع</button>
                     </div>
                 </div>
 
@@ -571,14 +566,14 @@
 
                 <div>
                     <div class="card-box" style="margin-bottom: 10px;">
-                        <h3>⏳ طلبات الحضور والغياب المعلقة فقط</h3>
+                        <h3>⏳ طلبات الحضور المعلقة (تسجيل حضور / تسجيل غياب)</h3>
                         <div style="max-height: 110px; overflow-y: auto;">
-                            <table><thead><tr><th>الاسم</th><th>النوع</th><th>الإجراء الفوري</th></tr></thead><tbody id="attTable"></tbody></table>
+                            <table><thead><tr><th>الاسم</th><th>الوقت</th><th>الإجراء المباشر</th></tr></thead><tbody id="attTable"></tbody></table>
                         </div>
                     </div>
 
                     <div class="card-box">
-                        <h3>📚 سجل الحضور والغياب المعتمد (محفوظ دائماً)</h3>
+                        <h3>📚 سجل الحضور المعتمد (محفوظ دائماً)</h3>
                         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
                             <input id="attendanceHistoryDateFilter" type="date" onchange="renderAttendanceHistory()" style="max-width:180px;">
                             <button class="btn-custom" onclick="clearAttendanceHistoryFilter()">عرض الكل</button>
@@ -589,17 +584,17 @@
                     </div>
 
                     <div class="card-box" style="margin-top:12px;">
-                        <h3>🛡️ سجل معاملات الإدارة (بند واحد لكل طالب)</h3>
+                        <h3>🛡️ سجل معاملات الإدارة (بند واحد لكل طالب بدون تكرار)</h3>
                         <div style="max-height:180px;overflow:auto;">
-                            <table><thead><tr><th>الطالب</th><th>آخر عملية / تفاصيل</th><th>الوقت</th></tr></thead>
+                            <table><thead><tr><th>العملية</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
                             <tbody id="auditLogTable"></tbody></table>
                         </div>
                     </div>
 
                     <div class="card-box">
-                        <h3>💳 مدفوعات قيد المراجعة فقط (تم الدفع / لم يدفع)</h3>
+                        <h3>💳 طلبات المدفوعات قيد المراجعة (تم الدفع / لم يدفع)</h3>
                         <div style="max-height: 110px; overflow-y: auto;">
-                            <table><thead><tr><th>الاسم</th><th>المبلغ</th><th>الإجراء</th></tr></thead><tbody id="payTable"></tbody></table>
+                            <table><thead><tr><th>الاسم والمبلغ</th><th>التفاصيل</th><th>الإجراء المباشر</th></tr></thead><tbody id="payTable"></tbody></table>
                         </div>
                     </div>
                 </div>
@@ -707,9 +702,13 @@
         if (typeof window.initFirebaseSync === 'function') {
             window.initFirebaseSync(() => {
                 reloadLocalVariables();
+                checkAndEvaluateAutoAbsence(); 
                 renderStudentSchedule();
                 if (document.getElementById('dashboardScreen').style.display === 'block') {
                     updateAdminDashboard();
+                }
+                if (currentLoggedInStudent) {
+                    updateStudentPortalView(currentLoggedInStudent);
                 }
             });
         }
@@ -725,6 +724,7 @@
                     document.getElementById('studentLoginBox').style.display = 'none';
                     document.getElementById('studentDashboardArea').style.display = 'block';
                     updateStudentPortalView(student);
+                    doStudentAttendanceDirect(student);
                 } else {
                     studentLoginByCode(cleanCode);
                 }
@@ -779,6 +779,32 @@
         return new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
     }
 
+    function checkAndEvaluateAutoAbsence() {
+        const todayKey = getTodayEgyptDateKey();
+        const lastChecked = localStorage.getItem('ysr_sys_last_abs_check_2027');
+        
+        if (lastChecked === todayKey) return; 
+
+        const dayName = new Date().toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'Africa/Cairo' });
+        
+        students.forEach(student => {
+            customSchedules.forEach(sched => {
+                if (sched.group === student.group || sched.subject === student.subject) {
+                    if (sched.time.includes(dayName)) {
+                        const hasAttended = attendanceLog.some(a => a.studentId === student.id && a.date === new Date().toLocaleDateString('ar-EG'));
+                        if (!hasAttended) {
+                            student.absentDays = (student.absentDays || 0) + 1;
+                        }
+                    }
+                }
+            });
+        });
+
+        localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+        localStorage.setItem('ysr_sys_last_abs_check_2027', todayKey);
+        commitChanges();
+    }
+
     function printStudentsReport() {
         let win = window.open('', '_blank');
         let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير أسامي وبيانات الطلاب</title>
@@ -790,8 +816,8 @@
         <thead><tr><th>الكود</th><th>اسم الطالب</th><th>المادة والمجموعة</th><th>الهاتف</th><th>حضور / غياب</th><th>الموقف المالي</th></tr></thead>
         <tbody>`;
         students.forEach(s => {
-            let attCount = attendanceLog.filter(a => a.studentId === s.id && a.status === 'حاضر').length;
-            let absCount = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب').length;
+            let attCount = attendanceLog.filter(a => a.studentId === s.id).length;
+            let absCount = s.absentDays || 0;
             html += `<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.subject || 'الكل'} (${s.group || 'عامة'})</td><td>${s.phone || 'بدون'}</td><td>حضور: ${attCount} | غياب: ${absCount}</td><td style="color:${s.due > 0 ? 'red' : 'green'};">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً'}</td></tr>`;
         });
         html += `</tbody></table><script>window.print();<\/script></body></html>`;
@@ -811,7 +837,7 @@
             th{background:#f0fdf4;color:#16a34a;}
         </style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الإيرادات والشامل</h2>
+        <h2>منصة مستر يسر الموافي - تقرير تفصيلي الإيرادات</h2>
         <hr>
         <div class="total-box">
             <p style="margin:0; font-weight:bold;">إجمالي الإيرادات المحصلة:</p>
@@ -845,7 +871,7 @@
             th{background:#fef2f2;color:#dc2626;}
         </style>
         </head><body>
-        <h2>منصة مستر يسر الموافي - تقرير تفصيلي المصروفات العامة</h2>
+        <h2>منصة مستر يسر الموافي - تقرير تفصيلي المصروفات</h2>
         <hr>
         <div class="total-box">
             <p style="margin:0; font-weight:bold;">إجمالي المصروفات المسجلة:</p>
@@ -880,16 +906,15 @@
         </head><body>
         <h2>منصة مستر يسر الموافي - تقرير تفصيلي الحضور والغياب للطلاب</h2>
         <hr>
-        <h3>سجل الحضور والغياب الشامل:</h3>
+        <h3>سجل الطلاب الحاضرين:</h3>
         <table>
-        <thead><tr><th>م</th><th>اسم الطالب</th><th>تاريخ التسجيل</th><th>وقت التسجيل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>م</th><th>اسم الطالب</th><th>تاريخ الحضور</th><th>وقت الحضور</th><th>الحالة</th></tr></thead>
         <tbody>`;
         if(attendanceLog.length === 0) {
-            html += `<tr><td colspan="5">لا توجد سجلات حضور أو غياب معتمدة حالياً</td></tr>`;
+            html += `<tr><td colspan="5">لا توجد سجلات حضور معتمدة حالياً</td></tr>`;
         } else {
             attendanceLog.forEach((item, idx) => {
-                let colorSt = item.status === 'حاضر' ? 'green' : 'red';
-                html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.date || '-'}</td><td>${item.time}</td><td style="color:${colorSt}; font-weight:bold;">${item.status} ✓</td></tr>`;
+                html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.date || '-'}</td><td>${item.time}</td><td style="color:green;">حاضر ✓</td></tr>`;
             });
         }
         html += `</tbody></table><script>window.print();<\/script></body></html>`;
@@ -995,19 +1020,22 @@
     }
 
     function updateStudentPortalView(student) {
-        let attCount = attendanceLog.filter(a => a.studentId === student.id && a.status === 'حاضر').length;
-        let absCount = attendanceLog.filter(a => a.studentId === student.id && a.status === 'غائب').length;
-        document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${student.name} 🌟`;
+        let freshStudent = students.find(s => s.id === student.id) || student;
+        let attCount = attendanceLog.filter(a => a.studentId === freshStudent.id).length;
+        let absCount = freshStudent.absentDays || 0;
+        
+        document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا ${freshStudent.name} 🌟`;
         document.getElementById('stAttDays').innerText = attCount;
         document.getElementById('stAbsDays').innerText = absCount;
         
-        let assignedSched = customSchedules.find(cs => cs.group === student.group || cs.subject === student.subject);
-        let scheduleText = assignedSched ? `${assignedSched.time} (${assignedSched.group})` : 'محدد بالجدول العام';
+        let matchedSched = customSchedules.find(sc => sc.group === freshStudent.group || sc.subject === freshStudent.subject);
+        let scheduleText = matchedSched ? `${matchedSched.time} (${matchedSched.group})` : 'محدد بالجدول العام';
         document.getElementById('stGroupBadge').innerText = scheduleText;
-        
+
         document.getElementById('studentProfileDetails').innerHTML = `
-            <b>كودك:</b> ${student.id} | <b>المجموعة:</b> ${student.group || 'عامة'}<br>
-            <b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+            <b>كودك:</b> ${freshStudent.id} | <b>المجموعة:</b> ${freshStudent.group || 'عامة'}<br>
+            <b>ميعاد مجموعتك:</b> <span style="color:var(--accent);">${scheduleText}</span><br>
+            <b>الموقف المالي:</b> <span style="color:${freshStudent.due > 0 ? 'var(--danger)' : 'var(--success)'};">${freshStudent.due > 0 ? 'عليك مبالغ بـ ' + freshStudent.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
         `;
     }
 
@@ -1064,6 +1092,7 @@
                     document.getElementById('studentLoginBox').style.display = 'none';
                     document.getElementById('studentDashboardArea').style.display = 'block';
                     updateStudentPortalView(student);
+                    doStudentAttendanceDirect(student);
                 } else {
                     studentLoginByCode(cleanCode);
                 }
@@ -1105,20 +1134,30 @@
                 alertBox.style.display = 'block';
                 if (student) {
                     let currentDateStr = new Date().toLocaleDateString('ar-EG');
+                    let currentDayName = new Date().toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'Africa/Cairo' });
+                    
+                    let matchedSched = customSchedules.find(sc => sc.group === student.group || sc.subject === student.subject);
+                    if (matchedSched && !matchedSched.time.includes(currentDayName)) {
+                        alertBox.style.background = 'rgba(120, 53, 15, 0.9)'; 
+                        alertBox.style.color = '#fde047';
+                        alertBox.innerHTML = `⚠️ تنبيه للطالب <b>${student.name}</b>:<br>يرجى تسجيل الحضور في معاد مجموعتك (${matchedSched.time})!`;
+                        return;
+                    }
+
                     let alreadyHasActiveRequest = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
                     let alreadyAttendedToday = attendanceLog.some(item => item.studentId === student.id && item.date === currentDateStr);
                     
                     if (alreadyHasActiveRequest || alreadyAttendedToday) {
                         alertBox.style.background = 'rgba(120, 53, 15, 0.9)'; 
                         alertBox.style.color = '#fde047';
-                        alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> لديه طلب مسجل مسبقاً أو تم اعتماد حضوره اليوم (${currentDateStr}) ولا يمكن التكرار!`;
+                        alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> تم تسجيل حضوره اليوم مسبقاً أو لديه طلب معلق!`;
                         return;
                     }
 
                     attRequests.push({ 
                         requestId: makeId('ATT'),
                         studentId: student.id, 
-                        name: student.name, 
+                        name: student.name + ' (سكان السنتر الفوري)', 
                         date: currentDateStr, 
                         isoDate: getTodayEgyptDateKey(),
                         time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
@@ -1130,7 +1169,7 @@
                     
                     alertBox.style.background = 'rgba(6, 78, 59, 0.9)'; 
                     alertBox.style.color = '#4ade80';
-                    alertBox.innerHTML = `✅ تم إرسال طلب حضور الطالب: <b>${student.name}</b> للطلبات المعلقة بنجاح ✓`;
+                    alertBox.innerHTML = `✅ تم إضافة حضور الطالب: <b>${student.name}</b> لطلبات الحضور بنجاح ✓`;
                 } else {
                     alertBox.style.background = 'rgba(153, 27, 27, 0.9)'; 
                     alertBox.style.color = '#f87171';
@@ -1160,13 +1199,14 @@
         return new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
     }
 
-    function addAudit(studentName, actionType, details) {
-        // تحديث سجل معاملات الإدارة بحيث يظهر بند واحد للطالب من غير تكرار
-        auditLog = auditLog.filter(a => a.studentName !== studentName);
+    function addAudit(action, details) {
+        // منع تكرار نفس البند بنفس التفاصيل في نفس الدقيقة لضمان عدم التكرار
+        let isDuplicate = auditLog.some(a => a.action === action && a.details === details);
+        if (isDuplicate) return;
+
         auditLog.push({
             auditId: makeId('AUD'),
-            studentName: studentName,
-            action: actionType,
+            action: action,
             details: details,
             at: nowEgypt()
         });
@@ -1198,38 +1238,34 @@
                attendanceLog.some(a => a.studentId === studentId && a.date === today);
     }
 
-    function doStudentAttendanceChoice(choiceType) {
-        if (!currentLoggedInStudent) return;
-        let box = document.getElementById('studentAlert');
-        box.style.display = 'block';
-
+    function addAttendanceRequest(student, methodLabel) {
         const today = getTodayEgyptDate();
         const currentDayName = new Date().toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'Africa/Cairo' });
-        
-        let assignedSched = customSchedules.find(cs => cs.group === currentLoggedInStudent.group || cs.subject === currentLoggedInStudent.subject);
-        
-        // التحقق مما إذا كان يوم الطالب غير يوم مجموعته
-        if (assignedSched && !assignedSched.time.includes(currentDayName)) {
-            box.style.background = 'rgba(120, 53, 15, 0.9)';
-            box.style.color = '#fde047';
-            box.innerHTML = `⚠️ يرجى تسجيل الحضور في معاد مجموعتك.<br>📅 ميعاد مجموعتك هو: <b>${assignedSched.time}</b>`;
-            return;
+
+        let matchedSched = customSchedules.find(sc => sc.group === student.group || sc.subject === student.subject);
+        let box = document.getElementById('studentAlert');
+
+        if (matchedSched && !matchedSched.time.includes(currentDayName)) {
+            if (box) {
+                box.style.display = 'block';
+                box.style.background = 'rgba(120, 53, 15, 0.9)';
+                box.style.color = '#fde047';
+                box.innerHTML = `⚠️ تنبيه يا ${student.name}: يرجى تسجيل الحضور في معاد مجموعتك (${matchedSched.time}).`;
+            }
+            return false;
         }
 
-        if (hasActiveOrApprovedAttendance(currentLoggedInStudent.id)) {
-            box.style.background = 'rgba(120, 53, 15, 0.9)';
-            box.style.color = '#fde047';
-            box.innerHTML = `⚠️ عذراً يا ${currentLoggedInStudent.name}، لديك طلب مسجل مسبقاً أو تم تسجيل حضورك/غيابك اليوم بالفعل. لا يمكن التكرار.`;
-            return;
+        if (hasActiveOrApprovedAttendance(student.id)) {
+            return false;
         }
 
-        attRequests = attRequests.filter(a => a.studentId !== currentLoggedInStudent.id);
+        attRequests = attRequests.filter(a => a.studentId !== student.id);
 
         attRequests.push({
             requestId: makeId('ATT'),
-            studentId: currentLoggedInStudent.id,
-            name: currentLoggedInStudent.name,
-            choice: choiceType, // حضور أو غياب
+            studentId: student.id,
+            name: student.name,
+            method: methodLabel || 'كود الطالب',
             date: today,
             isoDate: getTodayEgyptDateKey(),
             time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
@@ -1239,10 +1275,40 @@
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
         updateAdminDashboard();
+        return true;
+    }
+
+    function doStudentAttendance() {
+        if (!currentLoggedInStudent) return;
+        let box = document.getElementById('studentAlert');
+        box.style.display = 'block';
+
+        if (!addAttendanceRequest(currentLoggedInStudent, 'الكود التعريفي')) {
+            if(!box.innerHTML.includes('معاد مجموعتك')) {
+                box.style.background = 'rgba(120, 53, 15, 0.9)';
+                box.style.color = '#fde047';
+                box.innerHTML = `⚠️ عذراً يا ${currentLoggedInStudent.name}، تم إرسال حضورك أو تسجيله مسبقاً اليوم ولم يعد متاحاً التكرار.`;
+            }
+            return;
+        }
 
         box.style.background = 'rgba(6, 78, 59, 0.9)';
         box.style.color = '#4ade80';
-        box.innerText = `تم تسجيل طلب (${choiceType}) بنجاح وهو الآن قيد المراجعة الفورية ✓`;
+        box.innerText = `أهلاً بك يا ${currentLoggedInStudent.name}، تم إرسال حضور اليوم بنجاح وهو الآن قيد المراجعة ✓`;
+    }
+
+    function doStudentAttendanceDirect(student) {
+        let box = document.getElementById('studentAlert');
+        if(!box) return;
+        box.style.display = 'block';
+
+        if (!addAttendanceRequest(student, 'الكيو آر')) {
+            return;
+        }
+
+        box.style.background = 'rgba(6, 78, 59, 0.9)';
+        box.style.color = '#4ade80';
+        box.innerText = `أهلاً بك يا ${student.name}، تم إرسال حضورك اليوم بنجاح ✓`;
     }
 
     function sendPaymentRequest() {
@@ -1286,11 +1352,12 @@
             <b>الطالب:</b> ${currentLoggedInStudent.name}<br>
             <b>المادة:</b> ${subject} (${type})<br>
             <b>المبلغ:</b> ${val} ج.م<br>
-            <b>الحالة:</b> <span style="color:#eab308; font-weight:bold;">قيد المراجعة (قيد الدفع) ⏳</span>
+            <b>الحالة:</b> <span style="color:#eab308; font-weight:bold;">قيد المراجعة ⏳</span>
         `;
         document.getElementById('receiptModal').style.display = 'flex';
         document.getElementById('payDetails').value = '';
         document.getElementById('payVal').value = '';
+        updateAdminDashboard();
     }
 
     function closeReceiptModal() { document.getElementById('receiptModal').style.display = 'none'; }
@@ -1305,10 +1372,9 @@
         }
         let s = students.find(item => item.id === studentId);
         if (!s) { resBox.style.display = 'none'; return; }
-        let studentAtts = attendanceLog.filter(a => a.studentId === s.id && a.status === 'حاضر');
-        let studentAbss = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب');
-
-        let assignedSched = customSchedules.find(cs => cs.group === s.group || cs.subject === s.subject);
+        let studentAtts = attendanceLog.filter(a => a.studentId === s.id);
+        let absCount = s.absentDays || 0;
+        let matchedSched = customSchedules.find(sc => sc.group === s.group || sc.subject === s.subject);
 
         resBox.style.display = 'block';
         resBox.innerHTML = `
@@ -1316,10 +1382,10 @@
                 <h4 style="margin-top:0; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:4px;">الملف الشامل للطالب: ${s.name}</h4>
                 <p><b>كود السنتر:</b> ${s.id}</p>
                 <p><b>المجموعة والمادة:</b> ${s.subject || 'الكل'} (${s.group || 'عامة'})</p>
-                <p><b>معاد المجموعة:</b> <span style="color:var(--accent);">${assignedSched ? assignedSched.time : 'غير محدد'}</span></p>
+                <p><b>ميعاد المجموعة:</b> <span style="color:var(--accent);">${matchedSched ? matchedSched.time : 'غير محدد'}</span></p>
                 <p><b>رقم الهاتف (واتساب):</b> ${s.phone || 'غير مسجل'}</p>
                 <p><b>الموقف المالي:</b> <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً ✓'}</span></p>
-                <p><b>أيام الحضور الفعلي:</b> <span style="color:var(--success); font-weight:bold;">${studentAtts.length} يوم</span> | <b>أيام الغياب:</b> <span style="color:var(--danger); font-weight:bold;">${studentAbss.length} يوم</span></p>
+                <p><b>أيام الحضور الفعلي:</b> <span style="color:var(--success); font-weight:bold;">${studentAtts.length} يوم</span> | <b>أيام الغياب:</b> <span style="color:var(--danger); font-weight:bold;">${absCount} يوم</span></p>
             </div>
             <button class="btn-custom" onclick="printStudentProfile('${s.id}')" style="background:#7c3aed; margin-top:8px; max-width:200px;">🖨️ طباعة تفاصيل هذا الطالب</button>
         `;
@@ -1328,10 +1394,9 @@
     function printStudentProfile(id) {
         let s = students.find(item => item.id === id);
         if (!s) return;
-        let studentAtts = attendanceLog.filter(a => a.studentId === s.id && a.status === 'حاضر');
-        let studentAbss = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب');
-        let assignedSched = customSchedules.find(cs => cs.group === s.group || cs.subject === s.subject);
-        
+        let studentAtts = attendanceLog.filter(a => a.studentId === s.id);
+        let absCount = s.absentDays || 0;
+        let matchedSched = customSchedules.find(sc => sc.group === s.group || sc.subject === s.subject);
         let printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html dir="rtl"><head><meta charset="UTF-8"><title>ملف الطالب - ${s.name}</title>
@@ -1341,10 +1406,10 @@
                 <h2>منصة مستر يسر الموافي - ملف الطالب</h2><hr>
                 <p><b>اسم الطالب:</b> ${s.name}</p><p><b>كود السنتر:</b> ${s.id}</p>
                 <p><b>المجموعة والمادة:</b> ${s.subject || 'الكل'} (${s.group || 'عامة'})</p>
-                <p><b>معاد المجموعة:</b> ${assignedSched ? assignedSched.time : 'غير محدد'}</p>
+                <p><b>ميعاد المجموعة:</b> ${matchedSched ? matchedSched.time : 'غير محدد'}</p>
                 <p><b>رقم الهاتف:</b> ${s.phone || 'بدون'}</p>
                 <p><b>الموقف المالي:</b> ${s.due > 0 ? s.due + ' ج.م (عليك متأخرات)' : 'خالص تماماً ✓'}</p>
-                <p><b>أيام الحضور:</b> ${studentAtts.length} | <b>أيام الغياب:</b> ${studentAbss.length}</p>
+                <p><b>أيام الحضور:</b> ${studentAtts.length} | <b>أيام الغياب:</b> ${absCount}</p>
             </div>
             <script>window.print();<\/script></body></html>
         `);
@@ -1362,14 +1427,20 @@
 
         if (editId) {
             let student = students.find(s => s.id === editId);
-            if (student) { student.name = name; student.phone = phone; student.subject = subject; student.group = group; student.due = due; }
+            if (student) { 
+                student.name = name; 
+                student.phone = phone; 
+                student.subject = subject; 
+                student.group = group; 
+                student.due = due; 
+            }
             document.getElementById('editStudentId').value = '';
             document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
             document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود';
-            alert("تم تحديث البيانات بنجاح!");
+            alert("تم تحديث بيانات الطالب وتحديثها فوراً!");
         } else {
             let id = 'STU_' + Math.floor(100000 + Math.random() * 900000);
-            students.push({ id: id, name: name, phone: phone, subject: subject, group: group, due: due });
+            students.push({ id: id, name: name, phone: phone, subject: subject, group: group, due: due, absentDays: 0 });
             let fullCardUrl = window.location.origin + window.location.pathname + "?code=" + id;
             document.getElementById("newStudentQr").innerHTML = "";
             new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 80, height: 80 });
@@ -1379,6 +1450,9 @@
         commitChanges();
         document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = '';
         updateAdminDashboard();
+        if (currentLoggedInStudent && currentLoggedInStudent.id === editId) {
+            updateStudentPortalView(currentLoggedInStudent);
+        }
     }
 
     function editStudent(id) {
@@ -1431,36 +1505,56 @@
         alert(`تم تحميل المصروف على الطالب ${student.name} وتحديث حسابه بنجاح!`);
     }
 
-    function processAttendanceRequest(i, actionType) {
+    // زر تسجيل حضور مباشر من طلبات الحضور المعلقة
+    function processAttendanceAction(i, actionType) {
         let request = attRequests[i];
         if (!request) return;
 
-        // إزالة الطلب تماماً من الطلبات المعلقة فور اتخاذ القرار لكي لا تظهر مجدداً
+        // إزالة الطلب المعلق فوراً من القائمة لعدم ظهوره مرة أخرى
         attRequests.splice(i, 1);
 
-        let statusText = actionType === 'حضور' ? 'حاضر' : 'غائب';
+        const student = students.find(s => s.id === request.studentId);
 
-        attendanceLog.push({
-            attendanceId: request.requestId || ('ATT_' + Date.now()),
-            studentId: request.studentId,
-            name: request.name,
-            date: request.date,
-            time: request.time,
-            status: statusText,
-            approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })
-        });
+        if (actionType === 'attend') {
+            if (!attendanceLog.some(a => a.studentId === request.studentId && a.date === request.date)) {
+                attendanceLog.push({
+                    attendanceId: request.requestId || ('ATT_' + Date.now()),
+                    studentId: request.studentId,
+                    name: request.name,
+                    method: request.method || 'تسجيل حضور',
+                    date: request.date,
+                    time: request.time,
+                    approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
+                    status: 'approved'
+                });
+            }
+            if (student) {
+                student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
+            }
+            addAudit('تسجيل حضور', `تم تسجيل حضور الطالب ${request.name}`);
+        } else {
+            // تسجيل غياب
+            if (student) {
+                student.absentDays = (student.absentDays || 0) + 1;
+            }
+            addAudit('تسجيل غياب', `تم تسجيل غياب الطالب ${request.name}`);
+        }
 
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
-        addAudit(request.name, `تسجيل ${statusText}`, `تم تسجيل ${statusText} للطالب بتاريخ ${request.date}`);
+        localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
         commitChanges();
         updateAdminDashboard();
-        alert(`تم اعتماد ${statusText} للطالب بنجاح ومسحه من الطلبات المعلقة الفورية ✓`);
+        alert(actionType === 'attend' ? "تم تسجيل الحضور وترحيله فوراً لتقارير الحضور ✓" : "تم تسجيل الغياب وترحيله فوراً لتقارير الغياب ✓");
     }
 
-    function processPaymentRequest(i, isPaid) {
+    // زر معاملات المدفوعات (تم الدفع / لم يدفع)
+    function processPaymentAction(i, isPaid) {
         let p = payRequests[i];
         if (!p) return;
+
+        // مسح الطلب المعلق فوراً لكي يختفي نهائياً من الطلبات المعلقة
+        payRequests.splice(i, 1);
 
         if (isPaid) {
             income += p.amount;
@@ -1477,20 +1571,19 @@
 
             paymentLog.push({ studentId: p.studentId, name: p.name, amount: p.amount, type: p.type, paidAt: new Date().toLocaleString('ar-EG') });
             localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-            addAudit(p.name, 'تم الدفع', `تم اعتماد دفعة بقيمة ${p.amount} ج.م`);
+            localStorage.setItem('ysr_sys_inc_2027', income);
+            localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+            
+            addAudit('تم الدفع', `تم اعتماد دفعة للطالب ${p.name} بقيمة ${p.amount} ج.م`);
+            alert("تم تسجيل (تم الدفع) وتحديث الإيرادات وحساب الطالب وإزالة الطلب تماماً ✓");
         } else {
-            addAudit(p.name, 'لم يدفع', `تم رفض طلب الدفع بقيمة ${p.amount} ج.م`);
+            addAudit('لم يدفع', `تم تسجيل (لم يدفع) لطلب الطالب ${p.name}`);
+            alert("تم تسجيل (لم يدفع) وإزالة الطلب من المعلقات نهائياً.");
         }
 
-        // مسح الطلب نهائياً من الطلبات المعلقة لكي لا يظهر مرة أخرى
-        payRequests.splice(i, 1);
-
-        localStorage.setItem('ysr_sys_inc_2027', income);
-        localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
         commitChanges();
         updateAdminDashboard();
-        alert(isPaid ? "تم اعتماد الدفع وتحديث الإيرادات بنجاح وإزالة الطلب تماماً!" : "تم تسجيل (لم يدفع) وحذف الطلب نهائياً!");
     }
 
     function addExpense() {
@@ -1510,17 +1603,26 @@
     }
 
     function resetSystemData() {
-        if (confirm("⚠️ تحذير: هل أنت متأكد من تصفير الحركات والايرادات ومسح كافة الطلبات السابقة مع الاحتفاظ بأسماء الطلاب وبياناتهم الأساسية فقط؟")) {
-            income = 0; expenses = 0; attRequests = []; attendanceLog = []; payRequests = []; paymentLog = []; incomeLog = []; expensesLog = []; auditLog = [];
+        if (confirm("⚠️ تحذير تصفير شامل: هل تريد مسح كافة الحركات والإيرادات والطلبات الحالية مع الاحتفاظ ببيانات أسماء الطلاب فقط؟")) {
+            income = 0; 
+            expenses = 0; 
+            attRequests = []; 
+            attendanceLog = []; 
+            payRequests = []; 
+            paymentLog = []; 
+            incomeLog = []; 
+            expensesLog = []; 
+            auditLog = [];
             
-            // تصفير الديون وأيام الغياب والحضور لكل الطلاب الموجدين مع الاحتفاظ بأسمائهم وكودهم ومجموعاتهم فقط
+            // تصفير أيام الغياب والديون المرتبطة بالحركات القديمة للطلاب مع إبقاء أسمائهم وكودهم
             students.forEach(s => {
+                s.absentDays = 0;
                 s.due = 0;
             });
 
-            localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
             localStorage.setItem('ysr_sys_inc_2027', 0);
             localStorage.setItem('ysr_sys_exp_2027', 0);
+            localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
             localStorage.setItem('ysr_sys_att_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_pay_2027', JSON.stringify([]));
@@ -1528,41 +1630,40 @@
             localStorage.setItem('ysr_sys_audit_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
             localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
+            
             commitChanges();
             updateAdminDashboard();
-            alert("تم تصفير كافة الحركات والطلبات بنجاح ومسح البيانات القديمة نهائياً مع الاحتفاظ بأسماء الطلاب وبياناتهم الأساسية فقط.");
+            alert("تم تصفير كافة الحركات والبيانات القديمة تماماً، ولم يتبق سوى أسماء الطلاب وبياناتهم الأساسية!");
         }
     }
 
     function exportToExcel() {
         let tableHTML = `<html dir="rtl"><head><meta charset="UTF-8"></head><body>`;
-        tableHTML += `<h3>تقرير سنتر مستر يسر الموافي الشامل والشامل لكل شيء (بكالوريا 2027)</h3>`;
+        tableHTML += `<h3>تقرير شامل - سنتر مستر يسر الموافي (بكالوريا 2027)</h3>`;
         
-        tableHTML += `<h4>1. سجل بيانات الطلاب والموقف المالي والحضور والغياب</h4>`;
-        tableHTML += `<table border="1"><tr><th>الكود</th><th>اسم الطالب</th><th>المجموعة</th><th>الهاتف</th><th>الديون الحالية</th><th>أيام الحضور</th><th>أيام الغياب</th></tr>`;
+        tableHTML += `<h4>قائمة الطلاب والبيانات والموقف المالي</h4>`;
+        tableHTML += `<table border="1"><tr><th>الكود</th><th>الاسم</th><th>المادة والمجموعة</th><th>الهاتف</th><th>الديون المستحقة</th><th>أيام الغياب</th></tr>`;
         students.forEach(s => {
-            let attC = attendanceLog.filter(a => a.studentId === s.id && a.status === 'حاضر').length;
-            let absC = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب').length;
-            tableHTML += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.group || 'عامة'}</td><td>${s.phone || '-'}</td><td>${s.due} ج.م</td><td>${attC}</td><td>${absC}</td></tr>`;
+            tableHTML += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.subject || '-'} (${s.group || '-'})</td><td>${s.phone || '-'}</td><td>${s.due || 0} ج.م</td><td>${s.absentDays || 0}</td></tr>`;
         });
         tableHTML += `</table>`;
 
-        tableHTML += `<h4>2. سجل الحضور والغياب الدائم</h4>`;
+        tableHTML += `<h4>سجل الحضور والغياب الدائم</h4>`;
         tableHTML += `<table border="1"><tr><th>الطالب</th><th>الكود</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr>`;
         attendanceLog.forEach(a => {
-            tableHTML += `<tr><td>${a.name}</td><td>${a.studentId}</td><td>${a.date}</td><td>${a.time}</td><td>${a.status}</td></tr>`;
+            tableHTML += `<tr><td>${a.name}</td><td>${a.studentId}</td><td>${a.date}</td><td>${a.time}</td><td>حاضر</td></tr>`;
         });
         tableHTML += `</table>`;
 
-        tableHTML += `<h4>3. سجل المدفوعات والإيرادات المعتمدة</h4><table border="1"><tr><th>الطالب</th><th>الكود</th><th>المبلغ</th><th>النوع</th><th>التاريخ</th></tr>`;
+        tableHTML += `<h4>سجل المدفوعات والإيرادات الشاملة</h4><table border="1"><tr><th>الطالب</th><th>الكود</th><th>المبلغ</th><th>النوع</th><th>التاريخ</th></tr>`;
         paymentLog.forEach(p => {
             tableHTML += `<tr><td>${p.name}</td><td>${p.studentId || '-'}</td><td>${p.amount} ج.م</td><td>${p.type || '-'}</td><td>${p.paidAt || '-'}</td></tr>`;
         });
         tableHTML += `</table>`;
 
-        tableHTML += `<h4>4. سجل المصروفات العامة</h4><table border="1"><tr><th>نوع المصروف</th><th>المبلغ</th></tr>`;
-        expensesLog.forEach(ex => {
-            tableHTML += `<tr><td>${ex.type}</td><td>${ex.amount} ج.م</td></tr>`;
+        tableHTML += `<h4>سجل المصروفات العامة</h4><table border="1"><tr><th>بند المصروف</th><th>المبلغ</th></tr>`;
+        expensesLog.forEach(e => {
+            tableHTML += `<tr><td>${e.type}</td><td>${e.amount} ج.م</td></tr>`;
         });
         tableHTML += `</table>`;
 
@@ -1590,10 +1691,10 @@
     function sendWhatsappMsg(index, type) {
         let s = students[index];
         let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
-        let absCount = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب').length;
+        let matchedSched = customSchedules.find(sc => sc.group === s.group || sc.subject === s.subject);
         let msg = type === 'welcome' 
-            ? `أهلاً بك يا ${s.name} في منصة مستر يسر الموافي (بكالوريا 2027). كودك: ${s.id}\nرابط الدخول المباشر وتسجيل الحضور:\n${window.location.origin + window.location.pathname}?code=${s.id}`
-            : `تنبيه من سنتر مستر يسر للطالب ${s.name}، لاحظنا تكرار غيابك (${absCount} أيام غياب) أو عليك مبالغ مالية متأخرة بقيمة ${s.due} ج.م، يرجى المتابعة.`;
+            ? `أهلاً بك يا ${s.name} في منصة مستر يسر الموافي (بكالوريا 2027). كودك: ${s.id}\nميعاد مجموعتك: ${matchedSched ? matchedSched.time : 'محدد بالجدول'}\nرابط الحضور المباشر:\n${window.location.origin + window.location.pathname}?code=${s.id}`
+            : `تنبيه من سنتر مستر يسر للطالب ${s.name}، لاحظنا تكرار غيابك (${s.absentDays || 0} أيام غياب) أو عليك مبالغ مالية متأخرة بقيمة ${s.due} ج.م، يرجى المتابعة.`;
         let url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
     }
@@ -1616,7 +1717,7 @@
             <td><b>${item.name}</b><br><small>${item.studentId}</small></td>
             <td>${item.date}</td>
             <td>${item.time}</td>
-            <td style="color:${item.status === 'حاضر' ? 'green' : 'red'}; font-weight:bold;">${item.status} ✓</td>
+            <td style="color:green;">حاضر ✓</td>
         </tr>`).join('') || '<tr><td colspan="4">لا توجد سجلات مطابقة</td></tr>';
     }
 
@@ -1651,55 +1752,64 @@
         attRequests.forEach((item, i) => {
             aHtml += `<tr>
                 <td><b>${item.name}</b><br><small style="color:var(--text-muted);">${item.date || ''} - ${item.time}</small></td>
-                <td><span style="color:var(--accent); font-weight:bold;">${item.choice || 'حضور'}</span></td>
+                <td>${item.time}</td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="processAttendanceRequest(${i}, 'حضور'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل حضور</button>
-                        <button onclick="processAttendanceRequest(${i}, 'غياب'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل غياب</button>
+                        <button onclick="processAttendanceAction(${i}, 'attend'); playClickSound();" style="background:var(--success); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">تسجيل حضور</button>
+                        <button onclick="processAttendanceAction(${i}, 'absent'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">تسجيل غياب</button>
                     </div>
                 </td>
             </tr>`;
         });
-        document.getElementById('attTable').innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور أو غياب معلقة</td></tr>';
+        document.getElementById('attTable').innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور جديدة</td></tr>';
 
         renderAttendanceHistory();
 
+        // فلترة سجل معاملات الإدارة لعرض بند واحد لكل طالب وتجنب التكرار
+        let uniqueAuditMap = new Map();
+        auditLog.slice().reverse().forEach(item => {
+            let key = item.action + '_' + item.details;
+            if (!uniqueAuditMap.has(key)) {
+                uniqueAuditMap.set(key, item);
+            }
+        });
+        let uniqueAudits = Array.from(uniqueAuditMap.values());
+
         const auditTable = document.getElementById('auditLogTable');
         if (auditTable) {
-            auditTable.innerHTML = auditLog.slice().reverse().slice(0, 100).map(a =>
-                `<tr><td><b>${a.studentName}</b></td><td>${a.action}: ${a.details}</td><td>${a.at}</td></tr>`
-            ).join('') || '<tr><td colspan="3">لا توجد معاملات مسجلة</td></tr>';
+            auditTable.innerHTML = uniqueAudits.slice(0, 50).map(a =>
+                `<tr><td>${a.action}</td><td>${a.details}</td><td>${a.at}</td></tr>`
+            ).join('') || '<tr><td colspan="3">لا توجد عمليات مسجلة</td></tr>';
         }
 
         let pHtml = '';
         payRequests.forEach((item, i) => {
             pHtml += `<tr>
                 <td><b>${item.name}</b><br><small>${item.subject} (${item.amount} ج.م)</small></td>
-                <td><b>${item.amount} ج.م</b></td>
+                <td><small>${item.details || 'بدون تفاصيل'}</small></td>
                 <td>
                     <div class="action-btns">
-                        <button onclick="processPaymentRequest(${i}, true); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تم الدفع</button>
-                        <button onclick="processPaymentRequest(${i}, false); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">لم يدفع</button>
+                        <button onclick="processPaymentAction(${i}, true); playClickSound();" style="background:var(--success); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">تم الدفع</button>
+                        <button onclick="processPaymentAction(${i}, false); playClickSound();" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">لم يدفع</button>
                     </div>
                 </td>
             </tr>`;
         });
-        document.getElementById('payTable').innerHTML = pHtml || '<tr><td colspan="3">لا توجد مدفوعات قيد المراجعة</td></tr>';
+        document.getElementById('payTable').innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات مدفوعات جديدة</td></tr>';
 
         let sHtml = '';
         students.forEach((s, idx) => {
-            let attC = attendanceLog.filter(a => a.studentId === s.id && a.status === 'حاضر').length;
-            let absC = attendanceLog.filter(a => a.studentId === s.id && a.status === 'غائب').length;
-            let isWarning = absC >= 2;
+            let absCount = s.absentDays || 0;
+            let isWarning = absCount >= 2;
             let rowBg = isWarning ? 'background: rgba(239, 68, 68, 0.15);' : '';
             sHtml += `<tr style="${rowBg}">
                 <td>${s.id} ${isWarning ? '⚠️' : ''}</td>
-                <td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absC + ')</small>' : ''}</td>
+                <td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absCount + ')</small>' : ''}</td>
                 <td>${s.subject || 'الكل'}<br><small style="color:var(--accent);">${s.group || 'مجموعة عامة'}</small></td>
                 <td>${s.phone || 'بدون'}</td>
                 <td>
-                    <span style="color:var(--success);">حضور: ${attC}</span> | 
-                    <span style="color:var(--danger);">غياب: ${absC}</span><br>
+                    <span style="color:var(--success);">حضور: ${attendanceLog.filter(a => a.studentId === s.id).length}</span> | 
+                    <span style="color:var(--danger);">غياب: ${absCount}</span><br>
                     <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'};">ديون: ${s.due} ج.م</span>
                 </td>
                 <td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
