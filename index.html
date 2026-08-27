@@ -83,6 +83,92 @@ set(dbRef, val);
 };
 set(ref(db, 'systemData'), payload);
 };
+
+function getCurrentMonthKeyEgypt() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return year + '-' + month;
+}
+
+function renderSubscriptionAlerts() {
+  const alertBox = document.getElementById('subscriptionAlertBox');
+  const tbody = document.getElementById('unpaidSubscriptionsList');
+  if (!alertBox || !tbody) return;
+
+  const currentMonthKey = getCurrentMonthKeyEgypt();
+  const unpaidStudents = students.filter(s => s.monthlyFee > 0 && s.lastPaidMonth !== currentMonthKey);
+
+  if (unpaidStudents.length === 0) {
+    alertBox.style.display = 'none';
+    return;
+  }
+
+  alertBox.style.display = 'block';
+  let html = '';
+  
+  // Get Arabic current month name
+  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
+
+  unpaidStudents.forEach(s => {
+    let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
+    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nنود تذكيرك بسداد ثمن الاشتراك الشهري المحدد بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* والمستحق منذ يوم 1 من الشهر.\nيرجى المبادرة بالسداد في أقرب وقت.`;
+    let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    
+    html += `<tr>
+      <td><b>${s.name}</b><br><small style="color: var(--text-muted);">${s.id}</small></td>
+      <td style="color: var(--danger); font-weight: bold;">${s.monthlyFee} ج.م</td>
+      <td>${s.phone || 'بدون'}</td>
+      <td>
+        <div class="action-btns">
+          <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
+          <button onclick="confirmSubscriptionPayment('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function confirmSubscriptionPayment(id) {
+  const student = students.find(s => s.id === id);
+  if (!student) return;
+
+  const currentMonthKey = getCurrentMonthKeyEgypt();
+  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
+  const amount = student.monthlyFee;
+
+  student.lastPaidMonth = currentMonthKey;
+  
+  // Also, record the payment in the income log and income total!
+  income += amount;
+  incomeLog.push({ 
+    name: student.name, 
+    subject: 'اشتراك شهر ' + arabicMonthName, 
+    details: 'دفع اشتراك شهري كاش من التنبيهات', 
+    amount: amount 
+  });
+
+  paymentLog = paymentLog || [];
+  paymentLog.push({ 
+    studentId: student.id, 
+    name: student.name, 
+    amount: amount, 
+    type: 'تم الدفع', 
+    paidAt: new Date().toLocaleString('ar-EG') 
+  });
+
+  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+  localStorage.setItem('ysr_sys_inc_2027', income);
+  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
+  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
+
+  addAudit('تسجيل مدفوعات', `تم تسجيل دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بقيمة ${amount} ج.م`);
+  commitChanges();
+  updateAdminDashboard();
+  alert(`✅ تم إثبات دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بنجاح وترحيله للتقارير!`);
+}
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -483,6 +569,24 @@ transition: 0.4s ease-in-out;
 <div class="stat-card"><h4>سجل الحضور</h4><span id="totAttendance" style="color: #a855f7;">0</span> سجل</div>
 </div>
 
+<!-- تنبيهات الاشتراكات المتأخرة -->
+<div id="subscriptionAlertBox" class="card-box" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.1); display: none; margin-bottom: 12px;">
+<h3 style="color: var(--danger); border-bottom: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 8px;">⚠️ تنبيهات الاشتراكات المتأخرة (مستحقة منذ يوم 1 من الشهر)</h3>
+<div style="max-height: 180px; overflow-y: auto;">
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background: rgba(239, 68, 68, 0.2); color: var(--text-main);">
+        <th>اسم الطالب</th>
+        <th>الاشتراك الشهري</th>
+        <th>رقم الهاتف</th>
+        <th>المطالبة والإجراء</th>
+      </tr>
+    </thead>
+    <tbody id="unpaidSubscriptionsList"></tbody>
+  </table>
+</div>
+</div>
+
 <!-- محرك البحث الذكي عن أي طالب -->
 <div class="card-box" style="border: 2px solid var(--accent); background: var(--bg-table);">
 <h3 style="border: none; margin-bottom: 4px;">🔍 البحث المتقدم وملف الطالب الشامل</h3>
@@ -606,6 +710,7 @@ transition: 0.4s ease-in-out;
 <option value="عامة">مجموعة عامة</option>
 </select>
 <input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)">
+<input type="number" id="newSMonthlyFee" placeholder="ثمن الاشتراك الشهري المحدد (ج.م) (أو 0)">
 <button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود</button>
 <div style="text-align: center; margin-top: 8px;"><div id="newStudentQr" style="display: inline-block; background: white; padding: 4px; border-radius: 6px;"></div></div>
 </div>
@@ -1244,38 +1349,33 @@ let student = students.find(s => s.id === cleanCode);
 alertBox.style.display = 'block';
 if (student) {
 let currentDateStr = new Date().toLocaleDateString('ar-EG');
+
+let alreadyHasActiveRequest = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
 let alreadyAttendedToday = attendanceLog.some(item => item.studentId === student.id && item.date === currentDateStr);
 
-if (alreadyAttendedToday) {
+if (alreadyHasActiveRequest || alreadyAttendedToday) {
 alertBox.style.background = 'rgba(120, 53, 15, 0.9)';
 alertBox.style.color = '#fde047';
-alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> تم تسجيل حضوره اليوم بالفعل (${currentDateStr}) ولا يمكن التكرار!`;
+alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> لديه طلب مسجل مسبقاً أو تم تسسجيل حضوره اليوم (${currentDateStr}) ولا يمكن التكرار!`;
 return;
 }
 
-attendanceLog.push({
-attendanceId: 'ATT_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+attRequests.push({
+requestId: makeId('ATT'),
 studentId: student.id,
-name: student.name,
-method: 'سكان السنتر الفوري',
+name: student.name + ' (سكان السنتر الفوري)',
 date: currentDateStr,
+isoDate: getTodayEgyptDateKey(),
 time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
-approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
-status: 'approved'
+status: 'pending'
 });
-
-student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
-
-localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-
-addAudit('تسجيل حضور', `تم تسجيل حضور تلقائي للطالب ${student.name} عبر سكان السنتر الفوري`);
-commitChanges(['attendanceLog', 'students', 'auditLog']);
+localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
+commitChanges();
 updateAdminDashboard();
 
 alertBox.style.background = 'rgba(6, 78, 59, 0.9)';
 alertBox.style.color = '#4ade80';
-alertBox.innerHTML = `✅ تم تسجيل حضور الطالب: <b>${student.name}</b> مباشرة بنجاح وترحيله للتقارير ✓`;
+alertBox.innerHTML = `✅ تم إضافة طلب حضور الطالب: <b>${student.name}</b> بنجاح إلى الطلبات المعلقة ✓`;
 } else {
 alertBox.style.background = 'rgba(153, 27, 27, 0.9)';
 alertBox.style.color = '#f87171';
@@ -1517,6 +1617,7 @@ let phone = document.getElementById('newSPhone').value.trim();
 let subject = document.getElementById('newSSubject').value;
 let groupFull = document.getElementById('newSGroupSelect').value; // تتضمن المجموعة والموعد مقسومين بـ |
 let due = parseFloat(document.getElementById('newSDueManual').value) || 0;
+let monthlyFee = parseFloat(document.getElementById('newSMonthlyFee').value) || 0;
 if (!name) { alert("أدخل اسم الطالب"); return; }
 
 let groupName = "عامة";
@@ -1538,6 +1639,7 @@ student.subject = subject;
 student.group = groupName;
 student.groupTime = groupTime;
 student.due = due;
+student.monthlyFee = monthlyFee;
 }
 document.getElementById('editStudentId').value = '';
 document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
@@ -1545,7 +1647,7 @@ document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد ا�
 alert("تم تحديث بيانات الطالب وموعد مجموعته فورا بنجاح!");
 } else {
 let id = 'STU_' + Math.floor(100000 + Math.random() * 900000);
-students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0 });
+students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0, monthlyFee: monthlyFee, lastPaidMonth: '' });
 let fullCardUrl = window.location.origin + window.location.pathname + "?code=" + id;
 document.getElementById("newStudentQr").innerHTML = "";
 new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 80, height: 80 });
@@ -1553,7 +1655,7 @@ alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
 }
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
 commitChanges('students');
-document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = '';
+document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = ''; document.getElementById('newSMonthlyFee').value = '';
 updateAdminDashboard();
 }
 
@@ -1565,6 +1667,7 @@ document.getElementById('newSName').value = student.name;
 document.getElementById('newSPhone').value = student.phone || '';
 document.getElementById('newSSubject').value = student.subject || 'محاسبة مالية وإدارة أعمال';
 document.getElementById('newSDueManual').value = student.due;
+document.getElementById('newSMonthlyFee').value = student.monthlyFee || '';
 document.getElementById('studentFormTitle').innerText = `✏️ تعديل: ${student.name}`;
 document.getElementById('studentSubmitBtn').innerText = 'تحديث البيانات';
 window.scrollTo({ top: 200, behavior: 'smooth' });
@@ -1833,6 +1936,8 @@ renderAttendanceHistory();
 }
 
 function updateAdminDashboard() {
+renderSubscriptionAlerts();
+
 document.getElementById('totInc').innerText = income;
 document.getElementById('totExp').innerText = expenses;
 document.getElementById('netProf').innerText = income - expenses;
@@ -1914,7 +2019,7 @@ students.forEach((s, idx) => {
 let absCount = s.absentDays || 0;
 let isWarning = absCount >= 2;
 let rowBg = isWarning ? 'background: rgba(239, 68, 68, 0.15);' : '';
-sHtml += `<tr style="${rowBg}">
+sHtml += `<tr style="background:${rowBg}">
 <td>${s.id} ${isWarning ? '⚠️' : ''}</td>
 <td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absCount + ')</small>' : ''}</td>
 <td>${s.subject || 'الكل'}<br><small style="color:var(--accent);">${s.group || 'مجموعة عامة'} (${s.groupTime || 'بدون ميعاد'})</small></td>
@@ -1923,6 +2028,7 @@ sHtml += `<tr style="${rowBg}">
 <span style="color:var(--success);">حضور: ${attendanceLog.filter(a => a.studentId === s.id).length}</span> |
 <span style="color:var(--danger);">غياب: ${absCount}</span><br>
 <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'};">ديون: ${s.due} ج.م</span>
+${s.monthlyFee > 0 ? `<br><span style="color:${s.lastPaidMonth === getCurrentMonthKeyEgypt() ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">الاشتراك: ${s.monthlyFee} ج.م (${s.lastPaidMonth === getCurrentMonthKeyEgypt() ? 'تم الدفع' : 'لم يدفع'})</span>` : ''}
 </td>
 <td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
 <td>
@@ -1932,19 +2038,14 @@ sHtml += `<tr style="${rowBg}">
 </div>
 </td>
 <td>
-<div class="action-btns" style="display:flex; gap:2px; flex-direction:column; align-items:center;">
-<div style="display:flex; gap:2px; margin-bottom:2px;">
-<button onclick="manualAttendStudent('${s.id}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 6px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">حاضر ✓</button>
-<button onclick="manualAbsentStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 6px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">غياب ✗</button>
-</div>
-<div style="display:flex; gap:2px;">
-<button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">تعديل</button>
-<button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:#4b5563; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">حذف</button>
-</div>
+<div class="action-btns">
+<button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تعديل</button>
+<button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">حذف</button>
 </div>
 </td>
 </tr>`;
 });
+
 const studentsListTableEl = document.getElementById('studentsListTable');
 if (studentsListTableEl) studentsListTableEl.innerHTML = sHtml || '<tr><td colspan="8">لا يوجد طلاب مسجلين</td></tr>';
 }
