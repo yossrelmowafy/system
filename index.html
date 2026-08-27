@@ -23,30 +23,39 @@ appId: "1:564782283150:web:5818bec44b9f7cc4b18cdf"
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ربط البيانات السحابية بلحظيتها (تمت معالجة مشكلة الحقول الفارغة لعدم رجوع البيانات القديمة بعد التصفير)
+// ربط البيانات السحابية بلحظيتها
 window.initFirebaseSync = function(onDataLoaded) {
 onValue(ref(db, 'systemData'), (snapshot) => {
-const data = snapshot.val() || {};
-
-// مزامنة كاملة وموثوقة لضمان مسح البيانات تماماً عند التصفير وعدم عودتها
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(data.students || []));
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify(data.attRequests || []));
-localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(data.attendanceLog || []));
-localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(data.paymentLog || []));
-localStorage.setItem('ysr_sys_audit_2027', JSON.stringify(data.auditLog || []));
-localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(data.payRequests || []));
-localStorage.setItem('ysr_sys_inc_2027', data.income !== undefined ? data.income : 0);
-localStorage.setItem('ysr_sys_exp_2027', data.expenses !== undefined ? data.expenses : 0);
-localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(data.incomeLog || []));
-localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(data.expensesLog || []));
-localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(data.customSchedules || []));
-
+const data = snapshot.val();
+if (data) {
+if (data.students) localStorage.setItem('ysr_sys_st_2027', JSON.stringify(data.students));
+if (data.attRequests) localStorage.setItem('ysr_sys_att_2027', JSON.stringify(data.attRequests));
+if (data.attendanceLog) localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(data.attendanceLog));
+if (data.paymentLog) localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(data.paymentLog));
+if (data.auditLog) localStorage.setItem('ysr_sys_audit_2027', JSON.stringify(data.auditLog));
+if (data.payRequests) localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(data.payRequests));
+if (data.income !== undefined) localStorage.setItem('ysr_sys_inc_2027', data.income);
+if (data.expenses !== undefined) localStorage.setItem('ysr_sys_exp_2027', data.expenses);
+if (data.incomeLog) localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(data.incomeLog));
+if (data.expensesLog) localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(data.expensesLog));
+if (data.customSchedules) localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(data.customSchedules));
+} else {
+// تصفير حقيقي عند تفريغ السيرفر، مع الاحتفاظ بأسماء الطلاب محلياً لحمايتها
+localStorage.setItem('ysr_sys_att_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_pay_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_audit_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_inc_2027', 0);
+localStorage.setItem('ysr_sys_exp_2027', 0);
+localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
+localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
+}
 if (typeof onDataLoaded === 'function') onDataLoaded();
 });
 };
 
-window.saveSystemDataToCloud = function(nodes) {
-if (!nodes) {
+window.saveSystemDataToCloud = function() {
 const payload = {
 students: JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]'),
 attRequests: JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]'),
@@ -61,114 +70,7 @@ paymentLog: JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]')
 auditLog: JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]')
 };
 set(ref(db, 'systemData'), payload);
-return;
-}
-const nodeList = Array.isArray(nodes) ? nodes : [nodes];
-nodeList.forEach(node => {
-const dbRef = ref(db, 'systemData/' + node);
-let val;
-if (node === 'students') val = JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]');
-else if (node === 'attRequests') val = JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]');
-else if (node === 'attendanceLog') val = JSON.parse(localStorage.getItem('ysr_sys_att_log_2027') || '[]');
-else if (node === 'payRequests') val = JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]');
-else if (node === 'income') val = parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0');
-else if (node === 'expenses') val = parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0');
-else if (node === 'incomeLog') val = JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]');
-else if (node === 'expensesLog') val = JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]');
-else if (node === 'customSchedules') val = JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]');
-else if (node === 'paymentLog') val = JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]');
-else if (node === 'auditLog') val = JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]');
-set(dbRef, val);
-});
 };
-set(ref(db, 'systemData'), payload);
-};
-
-function getCurrentMonthKeyEgypt() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return year + '-' + month;
-}
-
-function renderSubscriptionAlerts() {
-  const alertBox = document.getElementById('subscriptionAlertBox');
-  const tbody = document.getElementById('unpaidSubscriptionsList');
-  if (!alertBox || !tbody) return;
-
-  const currentMonthKey = getCurrentMonthKeyEgypt();
-  const unpaidStudents = students.filter(s => s.monthlyFee > 0 && s.lastPaidMonth !== currentMonthKey);
-
-  if (unpaidStudents.length === 0) {
-    alertBox.style.display = 'none';
-    return;
-  }
-
-  alertBox.style.display = 'block';
-  let html = '';
-  
-  // Get Arabic current month name
-  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
-
-  unpaidStudents.forEach(s => {
-    let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
-    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nنود تذكيرك بسداد ثمن الاشتراك الشهري المحدد بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* والمستحق منذ يوم 1 من الشهر.\nيرجى المبادرة بالسداد في أقرب وقت.`;
-    let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    
-    html += `<tr>
-      <td><b>${s.name}</b><br><small style="color: var(--text-muted);">${s.id}</small></td>
-      <td style="color: var(--danger); font-weight: bold;">${s.monthlyFee} ج.م</td>
-      <td>${s.phone || 'بدون'}</td>
-      <td>
-        <div class="action-btns">
-          <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
-          <button onclick="confirmSubscriptionPayment('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
-        </div>
-      </td>
-    </tr>`;
-  });
-
-  tbody.innerHTML = html;
-}
-
-function confirmSubscriptionPayment(id) {
-  const student = students.find(s => s.id === id);
-  if (!student) return;
-
-  const currentMonthKey = getCurrentMonthKeyEgypt();
-  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
-  const amount = student.monthlyFee;
-
-  student.lastPaidMonth = currentMonthKey;
-  
-  // Also, record the payment in the income log and income total!
-  income += amount;
-  incomeLog.push({ 
-    name: student.name, 
-    subject: 'اشتراك شهر ' + arabicMonthName, 
-    details: 'دفع اشتراك شهري كاش من التنبيهات', 
-    amount: amount 
-  });
-
-  paymentLog = paymentLog || [];
-  paymentLog.push({ 
-    studentId: student.id, 
-    name: student.name, 
-    amount: amount, 
-    type: 'تم الدفع', 
-    paidAt: new Date().toLocaleString('ar-EG') 
-  });
-
-  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-  localStorage.setItem('ysr_sys_inc_2027', income);
-  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
-  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-
-  addAudit('تسجيل مدفوعات', `تم تسجيل دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بقيمة ${amount} ج.م`);
-  commitChanges();
-  updateAdminDashboard();
-  alert(`✅ تم إثبات دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بنجاح وترحيله للتقارير!`);
-}
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -697,7 +599,10 @@ transition: 0.4s ease-in-out;
 <div class="grid-2cols">
 <div class="card-box">
 <h3 id="studentFormTitle">➕ إضافة طالب جديد</h3>
-<input type="hidden" id="editStudentId">
+<div id="editIdWrapper" style="display: none; margin-bottom: 8px;">
+  <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">تعديل كود الطالب (اختياري):</label>
+  <input type="text" id="editStudentId" placeholder="كود الطالب">
+</div>
 <input type="text" id="newSName" placeholder="اسم الطالب بالكامل">
 <input type="text" id="newSPhone" placeholder="رقم الهاتف (واتساب)">
 <select id="newSSubject">
@@ -710,6 +615,8 @@ transition: 0.4s ease-in-out;
 <option value="عامة">مجموعة عامة</option>
 </select>
 <input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)">
+<label style="font-size:11px; color:var(--text-muted);">ثمن الاشتراك الشهري المحدد (أو 0):</label>
+<input type="number" id="newSMonthlyFee" placeholder="قيمة الاشتراك الشهري (مثلاً: 200)">
 <input type="number" id="newSMonthlyFee" placeholder="ثمن الاشتراك الشهري المحدد (ج.م) (أو 0)">
 <button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود</button>
 <div style="text-align: center; margin-top: 8px;"><div id="newStudentQr" style="display: inline-block; background: white; padding: 4px; border-radius: 6px;"></div></div>
@@ -718,6 +625,10 @@ transition: 0.4s ease-in-out;
 <div>
 <div class="card-box" style="margin-bottom: 10px;">
 <h3>⏳ طلبات الحضور المعلقة (تسجيل حضور / تسجيل غياب)</h3>
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
+  <input id="attRequestsDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
+  <button class="btn-custom" onclick="document.getElementById('attRequestsDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
+</div>
 <div style="max-height: 110px; overflow-y: auto;">
 <table><thead><tr><th>الاسم</th><th>الوقت</th><th>الإجراء الفوري</th></tr></thead><tbody id="attTable"></tbody></table>
 </div>
@@ -736,6 +647,10 @@ transition: 0.4s ease-in-out;
 
 <div class="card-box" style="margin-top:12px;">
 <h3>🛡️ سجل معاملات الإدارة (بند موحد غير مكرر)</h3>
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
+  <input id="auditLogDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
+  <button class="btn-custom" onclick="document.getElementById('auditLogDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
+</div>
 <div style="max-height:180px;overflow:auto;">
 <table><thead><tr><th>العملية</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
 <tbody id="auditLogTable"></tbody></table>
@@ -744,6 +659,10 @@ transition: 0.4s ease-in-out;
 
 <div class="card-box">
 <h3>💳 مدفوعات قيد المراجعة (تم الدفع / لم يدفع)</h3>
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
+  <input id="payRequestsDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
+  <button class="btn-custom" onclick="document.getElementById('payRequestsDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
+</div>
 <div style="max-height: 110px; overflow-y: auto;">
 <table><thead><tr><th>الاسم</th><th>المبلغ</th><th>الإجراء</th></tr></thead><tbody id="payTable"></tbody></table>
 </div>
@@ -1611,7 +1530,7 @@ printWindow.document.close();
 }
 
 function saveOrUpdateStudent() {
-let editId = document.getElementById('editStudentId').value;
+let editId = document.getElementById('editStudentId').value.trim();
 let name = document.getElementById('newSName').value.trim();
 let phone = document.getElementById('newSPhone').value.trim();
 let subject = document.getElementById('newSSubject').value;
@@ -1626,13 +1545,24 @@ if (groupFull.includes("|")) {
 let parts = groupFull.split("|");
 groupName = parts[0];
 groupTime = parts[1];
-} else {
-groupName = groupFull;
 }
 
-if (editId) {
-let student = students.find(s => s.id === editId);
+if (window.currentEditingOldId) {
+let student = students.find(s => s.id === window.currentEditingOldId);
 if (student) {
+  if (editId !== window.currentEditingOldId) {
+    let exists = students.some(s => s.id === editId);
+    if (exists) {
+      alert("⚠️ هذا الكود مستخدم بالفعل لطالب آخر!");
+      return;
+    }
+    // Update any logs referring to this student's ID!
+    attendanceLog.forEach(a => { if (a.studentId === window.currentEditingOldId) a.studentId = editId; });
+    attRequests.forEach(r => { if (r.studentId === window.currentEditingOldId) r.studentId = editId; });
+    payRequests.forEach(p => { if (p.studentId === window.currentEditingOldId) p.studentId = editId; });
+    if (window.paymentLog) window.paymentLog.forEach(p => { if (p.studentId === window.currentEditingOldId) p.studentId = editId; });
+  }
+student.id = editId;
 student.name = name;
 student.phone = phone;
 student.subject = subject;
@@ -1641,12 +1571,19 @@ student.groupTime = groupTime;
 student.due = due;
 student.monthlyFee = monthlyFee;
 }
+window.currentEditingOldId = null;
+document.getElementById('editIdWrapper').style.display = 'none';
 document.getElementById('editStudentId').value = '';
 document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
 document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود';
 alert("تم تحديث بيانات الطالب وموعد مجموعته فورا بنجاح!");
 } else {
-let id = 'STU_' + Math.floor(100000 + Math.random() * 900000);
+let id = editId || ('STU_' + Math.floor(100000 + Math.random() * 900000));
+let exists = students.some(s => s.id === id);
+if (exists) {
+  alert("⚠️ كود الطالب هذا مسجل بالفعل لطالب آخر!");
+  return;
+}
 students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0, monthlyFee: monthlyFee, lastPaidMonth: '' });
 let fullCardUrl = window.location.origin + window.location.pathname + "?code=" + id;
 document.getElementById("newStudentQr").innerHTML = "";
@@ -1654,15 +1591,21 @@ new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 
 alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
 }
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges('students');
-document.getElementById('newSName').value = ''; document.getElementById('newSPhone').value = ''; document.getElementById('newSDueManual').value = ''; document.getElementById('newSMonthlyFee').value = '';
+commitChanges();
+document.getElementById('newSName').value = ''; 
+document.getElementById('newSPhone').value = ''; 
+document.getElementById('newSDueManual').value = '';
+document.getElementById('newSMonthlyFee').value = '';
+document.getElementById('editStudentId').value = '';
 updateAdminDashboard();
 }
 
 function editStudent(id) {
 let student = students.find(s => s.id === id);
 if (!student) return;
+window.currentEditingOldId = student.id;
 document.getElementById('editStudentId').value = student.id;
+document.getElementById('editIdWrapper').style.display = 'block'; // Show editable ID field
 document.getElementById('newSName').value = student.name;
 document.getElementById('newSPhone').value = student.phone || '';
 document.getElementById('newSSubject').value = student.subject || 'محاسبة مالية وإدارة أعمال';
@@ -1710,7 +1653,9 @@ selectEl.value = '';
 alert(`تم تحميل المصروف على الطالب ${student.name} وتحديث حسابه بنجاح!`);
 }
 
-function approveAttendanceAction(i) {
+function approveAttendanceAction(requestId) {
+const i = attRequests.findIndex(r => r.requestId === requestId);
+if (i === -1) return;
 const request = attRequests[i];
 if (!request) return;
 
@@ -1743,7 +1688,9 @@ updateAdminDashboard();
 alert("تم تسجيل حضور الطالب بنجاح وترحيله لحظياً إلى تقارير الحضور وتم مسح الطلب فوري من المعلقة ✓");
 }
 
-function approveAbsenceAction(i) {
+function approveAbsenceAction(requestId) {
+const i = attRequests.findIndex(r => r.requestId === requestId);
+if (i === -1) return;
 const request = attRequests[i];
 if (!request) return;
 
@@ -1762,7 +1709,9 @@ updateAdminDashboard();
 alert("تم تسجيل غياب الطالب وترحيله للتقارير وتم مسح الطلب فوري من المعلقة ✓");
 }
 
-function approvePaymentAction(i) {
+function approvePaymentAction(requestId) {
+let i = payRequests.findIndex(r => r.requestId === requestId);
+if (i === -1) return;
 let p = payRequests[i];
 if (!p) return;
 
@@ -1794,7 +1743,9 @@ updateAdminDashboard();
 alert("تم اعتماد معاملة المدفوعات بنجاح ومسح الطلب من المعلقة فوراً!");
 }
 
-function rejectPaymentAction(i) {
+function rejectPaymentAction(requestId) {
+let i = payRequests.findIndex(r => r.requestId === requestId);
+if (i === -1) return;
 const p = payRequests[i];
 if (!p) return;
 
@@ -1963,20 +1914,29 @@ if (payDirectSelect) payDirectSelect.innerHTML = payDirectOptions;
 renderStudentSchedule();
 
 let aHtml = '';
+let attDateVal = document.getElementById('attRequestsDateFilter') ? document.getElementById('attRequestsDateFilter').value : '';
 attRequests.forEach((item, i) => {
-aHtml += `<tr>
+  let show = true;
+  if (attDateVal) {
+    let parts = attDateVal.split('-');
+    let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    show = (item.isoDate === attDateVal || (item.date && item.date.includes(formattedAr)));
+  }
+  if (show) {
+    aHtml += `<tr>
 <td><b>${item.name}</b><br><small style="color:var(--text-muted);">${item.date || ''} - ${item.time}</small></td>
 <td>${item.time}</td>
 <td>
 <div class="action-btns">
-<button onclick="approveAttendanceAction(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل حضور</button>
-<button onclick="approveAbsenceAction(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل غياب</button>
+<button onclick="approveAttendanceAction('${item.requestId}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل حضور</button>
+<button onclick="approveAbsenceAction('${item.requestId}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل غياب</button>
 </div>
 </td>
 </tr>`;
+  }
 });
 const attTableEl = document.getElementById('attTable');
-if (attTableEl) attTableEl.innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور جديدة</td></tr>';
+if (attTableEl) attTableEl.innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور جديدة مطابقة</td></tr>';
 
 renderAttendanceHistory();
 
@@ -1992,27 +1952,48 @@ uniqueAudit.push(item);
 }
 });
 
-auditTable.innerHTML = uniqueAudit.slice(0, 100).map(a =>
+let auditDateVal = document.getElementById('auditLogDateFilter') ? document.getElementById('auditLogDateFilter').value : '';
+let filteredAudit = uniqueAudit;
+if (auditDateVal) {
+  let parts = auditDateVal.split('-');
+  let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+  filteredAudit = uniqueAudit.filter(item => {
+    let atStr = item.at || '';
+    return atStr.includes(auditDateVal) || atStr.includes(formattedAr);
+  });
+}
+
+auditTable.innerHTML = filteredAudit.slice(0, 100).map(a =>
 `<tr><td>${a.action}</td><td>${a.details}</td><td>${a.at}</td></tr>`
-).join('') || '<tr><td colspan="3">لا توجد عمليات مسجلة</td></tr>';
+).join('') || '<tr><td colspan="3">لا توجد عمليات مطابقة</td></tr>';
 }
 
 let pHtml = '';
+let payDateVal = document.getElementById('payRequestsDateFilter') ? document.getElementById('payRequestsDateFilter').value : '';
 payRequests.forEach((item, i) => {
-let badgeColor = item.type === 'تم الدفع' ? 'var(--success)' : 'var(--danger)';
-pHtml += `<tr>
+  let show = true;
+  if (payDateVal) {
+    let parts = payDateVal.split('-');
+    let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    let dateStr = item.createdAt || '';
+    show = (dateStr.includes(payDateVal) || dateStr.includes(formattedAr));
+  }
+  if (show) {
+    let badgeColor = item.type === 'تم الدفع' ? 'var(--success)' : 'var(--danger)';
+    pHtml += `<tr>
 <td><b>${item.name}</b><br><small>${item.subject}</small><br><span style="color:${badgeColor}; font-weight:bold;">${item.type}</span></td>
 <td><b>${item.amount} ج.م</b></td>
 <td>
 <div class="action-btns">
-<button onclick="approvePaymentAction(${i}); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">موافقة وترحيل</button>
-<button onclick="rejectPaymentAction(${i}); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تخطي/حذف</button>
+<button onclick="approvePaymentAction('${item.requestId}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">موافقة وترحيل</button>
+<button onclick="rejectPaymentAction('${item.requestId}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تخطي/حذف</button>
 </div>
 </td>
 </tr>`;
+  }
 });
 const payTableEl = document.getElementById('payTable');
-if (payTableEl) payTableEl.innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات مدفوعات قيد المراجعة</td></tr>';
+if (payTableEl) payTableEl.innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات مدفوعات مطابقة</td></tr>';
 
 let sHtml = '';
 students.forEach((s, idx) => {
@@ -2048,6 +2029,92 @@ ${s.monthlyFee > 0 ? `<br><span style="color:${s.lastPaidMonth === getCurrentMon
 
 const studentsListTableEl = document.getElementById('studentsListTable');
 if (studentsListTableEl) studentsListTableEl.innerHTML = sHtml || '<tr><td colspan="8">لا يوجد طلاب مسجلين</td></tr>';
+}
+
+function getCurrentMonthKeyEgypt() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return year + '-' + month;
+}
+
+function renderSubscriptionAlerts() {
+  const alertBox = document.getElementById('subscriptionAlertBox');
+  const tbody = document.getElementById('unpaidSubscriptionsList');
+  if (!alertBox || !tbody) return;
+
+  const currentMonthKey = getCurrentMonthKeyEgypt();
+  const unpaidStudents = students.filter(s => s.monthlyFee > 0 && s.lastPaidMonth !== currentMonthKey);
+
+  if (unpaidStudents.length === 0) {
+    alertBox.style.display = 'none';
+    return;
+  }
+
+  alertBox.style.display = 'block';
+  let html = '';
+  
+  // Get Arabic current month name
+  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
+
+  unpaidStudents.forEach(s => {
+    let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
+    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nنود تذكيرك بسداد ثمن الاشتراك الشهري المحدد بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* والمستحق منذ يوم 1 من الشهر.\nيرجى المبادرة بالسداد في أقرب وقت.`;
+    let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    
+    html += `<tr>
+      <td><b>${s.name}</b><br><small style="color: var(--text-muted);">${s.id}</small></td>
+      <td style="color: var(--danger); font-weight: bold;">${s.monthlyFee} ج.م</td>
+      <td>${s.phone || 'بدون'}</td>
+      <td>
+        <div class="action-btns">
+          <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
+          <button onclick="confirmSubscriptionPayment('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function confirmSubscriptionPayment(id) {
+  const student = students.find(s => s.id === id);
+  if (!student) return;
+
+  const currentMonthKey = getCurrentMonthKeyEgypt();
+  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
+  const amount = student.monthlyFee;
+
+  student.lastPaidMonth = currentMonthKey;
+  
+  // Also, record the payment in the income log and income total!
+  income += amount;
+  incomeLog.push({ 
+    name: student.name, 
+    subject: 'اشتراك شهر ' + arabicMonthName, 
+    details: 'دفع اشتراك شهري كاش من التنبيهات', 
+    amount: amount 
+  });
+
+  paymentLog = paymentLog || [];
+  paymentLog.push({ 
+    studentId: student.id, 
+    name: student.name, 
+    amount: amount, 
+    type: 'تم الدفع', 
+    paidAt: new Date().toLocaleString('ar-EG') 
+  });
+
+  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+  localStorage.setItem('ysr_sys_inc_2027', income);
+  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
+  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
+
+  addAudit('تسجيل مدفوعات', `تم تسجيل دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بقيمة ${amount} ج.م`);
+  commitChanges();
+  updateAdminDashboard();
+  alert(`✅ تم إثبات دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بنجاح وترحيله للتقارير!`);
 }
 </script>
 
