@@ -702,7 +702,7 @@
         if (typeof window.initFirebaseSync === 'function') {
             window.initFirebaseSync(() => {
                 reloadLocalVariables();
-                checkAndEvaluateAutoAbsence(); // فحص الغياب التلقائي للمجموعات التي انتهى يومها ولم يحضر الطالب
+                checkAndEvaluateAutoAbsence(); 
                 renderStudentSchedule();
                 if (document.getElementById('dashboardScreen').style.display === 'block') {
                     updateAdminDashboard();
@@ -769,7 +769,6 @@
         }
     }
 
-    // ===== نظام الغياب الذكي والتحقق من مواعيد المجموعات =====
     function getTodayEgyptDateKey() {
         return new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
     }
@@ -778,17 +777,14 @@
         const todayKey = getTodayEgyptDateKey();
         const lastChecked = localStorage.getItem('ysr_sys_last_abs_check_2027');
         
-        if (lastChecked === todayKey) return; // تم الفحص اليوم بالفعل
+        if (lastChecked === todayKey) return; 
 
-        // لو بدأ يوم جديد، نمر على الطلاب ونرى إن كان لديهم مجموعة اليوم ولم يسجلوا حضوراً وأتى يوم تالٍ
         const dayName = new Date().toLocaleDateString('ar-EG', { weekday: 'long', timeZone: 'Africa/Cairo' });
         
         students.forEach(student => {
-            // بحث إن كانت مجموعة الطالب توافق اليوم السابق ولم يسجل حضوراً
             customSchedules.forEach(sched => {
                 if (sched.group === student.group || sched.subject === student.subject) {
                     if (sched.time.includes(dayName)) {
-                        // التحقق من عدم وجود حضور لهذا الطالب في ذلك التاريخ
                         const hasAttended = attendanceLog.some(a => a.studentId === student.id && a.date === new Date().toLocaleDateString('ar-EG'));
                         if (!hasAttended) {
                             student.absentDays = (student.absentDays || 0) + 1;
@@ -1232,6 +1228,9 @@
             return false;
         }
 
+        // إزالة أي طلب حضور سابق معلق لنفس الطالب لضمان عدم تراكم الطلبات القديمة
+        attRequests = attRequests.filter(a => a.studentId !== student.id);
+
         attRequests.push({
             requestId: makeId('ATT'),
             studentId: student.id,
@@ -1291,16 +1290,9 @@
         let val = parseFloat(document.getElementById('payVal').value);
 
         if (isNaN(val) || val <= 0) { alert("يرجى كتابة مبلغ صحيح للدفع"); return; }
-        const duplicatePending = payRequests.some(r =>
-            r.studentId === currentLoggedInStudent.id &&
-            Number(r.amount) === Number(val) &&
-            (r.details || '') === details &&
-            r.status === 'pending'
-        );
-        if (duplicatePending) {
-            alert("تم إرسال طلب دفع مطابق بالفعل وهو قيد المراجعة.");
-            return;
-        }
+        
+        // إزالة أي طلب دفع سابق قيد المراجعة لنفس الطالب حتى لا تظهر الطلبات القديمة المعلقة
+        payRequests = payRequests.filter(r => r.studentId !== currentLoggedInStudent.id);
 
         payRequests.push({
             requestId: makeId('PAY'),
@@ -1326,6 +1318,7 @@
         document.getElementById('receiptModal').style.display = 'flex';
         document.getElementById('payDetails').value = '';
         document.getElementById('payVal').value = '';
+        updateAdminDashboard();
     }
 
     function closeReceiptModal() { document.getElementById('receiptModal').style.display = 'none'; }
@@ -1488,6 +1481,7 @@
             student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
         }
 
+        // إزالة الطلب الحالي نهائياً وبشكل قاطع لضمان عدم ظهوره مرة أخرى
         attRequests.splice(i, 1);
 
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
@@ -1501,6 +1495,7 @@
 
     function rejectAtt(i) {
         if (!attRequests[i]) return;
+        // حذف طلب الحضور المرفوض نهائياً من مصفوفة الطلبات المعلقة
         attRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
         commitChanges();
@@ -1510,6 +1505,7 @@
 
     function approvePay(i) {
         let p = payRequests[i];
+        if (!p) return;
         income += p.amount;
         
         incomeLog.push({ name: p.name, subject: p.subject + ' (' + p.type + ')', details: p.details, amount: p.amount });
@@ -1520,7 +1516,10 @@
         if (paidStudent && paidStudent.due > 0) {
             paidStudent.due = Math.max(0, paidStudent.due - p.amount);
         }
+        
+        // حذف طلب الدفع المعتمد من قائمة الطلبات المعلقة حتى لا يظهر مرة أخرى
         payRequests.splice(i, 1);
+
         localStorage.setItem('ysr_sys_inc_2027', income);
         localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
@@ -1534,6 +1533,7 @@
     function rejectPay(i) {
         const p = payRequests[i];
         if (!p) return;
+        // حذف طلب الدفع المرفوض نهائياً من قائمة الطلبات المعلقة لضمان عدم ظهوره عند إرسال طلب جديد
         payRequests.splice(i, 1);
         localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
         commitChanges();
