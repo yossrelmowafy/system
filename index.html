@@ -1340,204 +1340,8 @@ let absCount = s.absentDays || 0;
 html += `<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</td><td>${s.phone || 'بدون'}</td><td>حضور: ${attCount} | غياب: ${absCount}</td><td style="color:${s.due > 0 ? 'red' : 'green'};">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً'}</td></tr>`;
 });
 html += `</tbody></table><script>window.print();<\/script>
-<!-- زر الإضافة العائم في لوحة التحكم (الآدمن) -->
-<div id="adminFloatingAddBtn" class="admin-floating-add-btn" onclick="openContentManagerModal(); playClickSound();" title="مركز إدارة الملفات والكتب والواجبات">+</div>
+html += `</body></html>`;
 
-<!-- مودال مركز إدارة الملفات والكتب والواجبات (للآدمن) -->
-<div id="contentManagerModal" class="custom-modal-overlay">
-  <div class="custom-modal-container">
-    <div class="custom-modal-header">
-      <h3>📂 مركز إدارة المحتوى والواجبات والكتب الذكي (مستر يسر الموافي)</h3>
-      <button class="custom-modal-close" onclick="closeContentManagerModal(); playClickSound();">إغلاق ✗</button>
-    </div>
-    
-    <div class="modal-tabs">
-      <button id="tabBtnCreateFolder" class="modal-tab-btn active" onclick="switchModalTab('createFolder')">📁 إنشاء مجلد جديد</button>
-      <button id="tabBtnUploadFile" class="modal-tab-btn" onclick="switchModalTab('uploadFile')">📄 رفع ملف وصلاحياته</button>
-      <button id="tabBtnSubmissions" class="modal-tab-btn" onclick="switchModalTab('submissions')">🏆 كشف تسليمات الواجبات</button>
-    </div>
-
-    <!-- Tab 1: Create Folder -->
-    <div id="modalTabCreateFolder" class="modal-tab-content" style="display: block;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>📁 إنشاء مجلد أو مادة جديدة لمكتبة السنتر</h3>
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اسم المجلد / الكتاب (مثال: كتاب المحاسبة المالية، مراجعة شهر يناير):</label>
-        <input type="text" id="newFolderNameInput" placeholder="أدخل اسم المجلد...">
-        
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">المادة الموجه لها هذا المجلد:</label>
-        <select id="folderSubjectInput">
-          <option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)</option>
-          <option value="محاسبة مالية">محاسبة مالية فقط</option>
-          <option value="إدارة أعمال">إدارة أعمال فقط</option>
-        </select>
-        
-        <button class="btn-custom" onclick="createContentFolder(); playClickSound();" style="background: var(--success);">+ إنشاء المجلد ونشره فوراً</button>
-      </div>
-      
-      <div class="card-box">
-        <h3>📂 المجلدات الحالية المسجلة</h3>
-        <div id="adminFoldersList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
-          <!-- سيتم سرد المجلدات هنا -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 2: Upload File & Permissions -->
-    <div id="modalTabUploadFile" class="modal-tab-content" style="display: none;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>📄 رفع مذكرات أو امتحانات مباشرة من كمبيوترك</h3>
-        
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر المجلد المستهدف لرفع الملف بداخله:</label>
-        <select id="fileFolderSelect">
-          <option value="">-- اختر المجلد --</option>
-        </select>
-
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">عنوان الملف أو المذكرة (مثال: مذكرة شرح المحاسبة، أسئلة الواجب):</label>
-        <input type="text" id="newFileNameInput" placeholder="أدخل عنوان الملف للتلميذ...">
-
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر الملف من جهازك (PDF أو صور):</label>
-        <input type="file" id="newFileField" accept="application/pdf, image/*" style="margin-bottom: 12px;">
-
-        <!-- شريط التقدم للرفع -->
-        <div id="uploadProgressContainer" style="display: none; margin-bottom: 15px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-            <span style="color: var(--accent); font-weight: bold;">⏳ جارِ رفع الملف السحابي...</span>
-            <span id="uploadProgressPercent" style="font-weight: bold;">0%</span>
-          </div>
-          <progress id="uploadProgressBar" value="0" max="100"></progress>
-        </div>
-
-        <!-- إعدادات الصلاحيات للتحكم بالتنزيل -->
-        <div class="toggle-switch-container">
-          <span class="toggle-switch-label">📥 السماح للطالب بتحميل وتنزيل الملف على جهازه:</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="fileDownloadPermInput" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <!-- إعدادات الواجب التفاعلي -->
-        <div class="toggle-switch-container" style="border-color: #f59e0b;">
-          <span class="toggle-switch-label" style="color: #f59e0b;">📝 هل هذا الملف يمثل واجب أو امتحان تفاعلي؟</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="fileIsHomeworkInput" onchange="toggleHomeworkBuilderArea()">
-            <span class="slider" style="background-color: #4b5563;"></span>
-          </label>
-        </div>
-
-        <!-- بناء أسئلة الواجب التفاعلي -->
-        <div id="homeworkBuilderArea" style="display: none; border: 1px solid #f59e0b; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.03); margin-bottom: 12px;">
-          <h4 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 13px;">📝 مصمم أسئلة الواجب التفاعلي (مؤقت ساعة)</h4>
-          
-          <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">مدة الامتحان بالدقائق (افتراضي 60 دقيقة):</label>
-          <input type="number" id="homeworkDurationInput" value="60" style="max-width: 120px;">
-
-          <div id="homeworkQuestionsContainer">
-            <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
-          </div>
-          
-          <button class="btn-custom" onclick="addNewHomeworkQuestionRow(); playClickSound();" style="background: #f59e0b; color: #111; max-width: 200px; font-size: 11px; padding: 6px;">+ إضافة سؤال اختيار من متعدد</button>
-        </div>
-
-        <button id="uploadContentBtn" class="btn-custom" onclick="uploadAndPublishFile(); playClickSound();" style="background: var(--accent);">🚀 رفع الملف ونشره للطلاب</button>
-      </div>
-      
-      <div class="card-box">
-        <h3>📄 المذكرات والملفات المنشورة في المجلدات</h3>
-        <div id="adminFilesList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
-          <!-- سيتم سرد الملفات المرفوعة هنا -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 3: Homework Submissions -->
-    <div id="modalTabSubmissions" class="modal-tab-content" style="display: none;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>🏆 كشف تسليمات الواجبات والامتحانات التفاعلية</h3>
-        <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">راقب كشف تصحيح الواجبات للطلاب تلقائياً ومستواهم مادة بمادة:</p>
-        
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-          <input type="text" id="submissionsSearchInput" placeholder="البحث باسم الطالب أو الواجب..." oninput="renderAdminSubmissionsTable()" style="flex: 1; margin:0;">
-          <button class="btn-custom" onclick="clearSubmissionsSearch(); playClickSound();" style="width: auto; padding: 8px 15px; margin:0;">عرض الكل</button>
-        </div>
-
-        <div style="overflow-x: auto; max-height: 350px;">
-          <table>
-            <thead>
-              <tr>
-                <th>اسم الطالب (الكود)</th>
-                <th>اسم الواجب</th>
-                <th>الدرجة النهائية</th>
-                <th>الوقت المستغرق</th>
-                <th>تاريخ التسليم</th>
-                <th>التحكم</th>
-              </tr>
-            </thead>
-            <tbody id="adminSubmissionsTableBody">
-              <!-- سيتم تعبئة درجات الطلاب هنا -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- مودال قارئ الملفات الآمن والشفاف للمتصفح (عرض مؤمن لمنع التحميل) -->
-<div id="secureFileViewerModal" class="custom-modal-overlay">
-  <div class="custom-modal-container" style="max-width: 900px; padding: 15px;">
-    <div class="custom-modal-header" style="margin-bottom: 10px;">
-      <h3 id="secureViewerTitle">👁️ قارئ المذكرات والكتب المحمي</h3>
-      <button class="custom-modal-close" onclick="closeSecureFileViewer(); playClickSound();">إغلاق القارئ ✗</button>
-    </div>
-    <div style="position: relative; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-      <!-- طبقة حماية شفافة لمنع سحب الملف أو الضغط كليك يمين لتأمين الكتاب -->
-      <div id="viewerOverlayProtection" class="exam-protection-overlay" style="display: block;"></div>
-      <iframe id="secureViewerIframe" class="secure-viewer-iframe" src=""></iframe>
-    </div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; color: var(--text-muted);">
-      <span>🔒 هذا الملف معروض تحت نظام الحماية الذكي لمكتبة مستر يسر الموافي</span>
-      <span id="secureViewerDownloadLinkArea"></span>
-    </div>
-  </div>
-</div>
-
-<!-- لوحة الامتحان والواجب التفاعلي بملء الشاشة للطالب -->
-<div id="interactiveExamPanel" class="exam-fullscreen-container">
-  <div class="exam-header">
-    <div style="display: flex; flex-direction: column;">
-      <h3 id="examHomeworkTitle" style="margin: 0; color: var(--accent); font-size: 16px;">اسم الامتحان التفاعلي</h3>
-      <small style="color: var(--text-muted);" id="examStudentName">الطالب: ---</small>
-    </div>
-    <div style="display: flex; gap: 15px; align-items: center;">
-      <div id="examCountdownTimer" class="exam-timer">60:00</div>
-      <button class="custom-modal-close" onclick="triggerHomeworkForcedExit();" style="padding: 6px 15px;">تسجيل الخروج والانسحاب ✗</button>
-    </div>
-  </div>
-  
-  <div class="exam-body-grid">
-    <!-- الباب الأيمن: ورقة شرح أو أسئلة الواجب المعروضة كـ PDF محمي -->
-    <div class="exam-pdf-pane">
-      <div class="exam-protection-overlay"></div>
-      <iframe id="examPdfIframe" style="width: 100%; height: 100%; border: none;" src=""></iframe>
-    </div>
-    
-    <!-- الباب الأيسر: الاستبيان والأسئلة الاختيارية للحل التفاعلي والتصحيح -->
-    <div class="exam-questions-pane">
-      <h4 style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; color: #3b82f6;">📋 ورقة الإجابة والتصحيح الإلكتروني الفوري:</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px;">اقرأ السؤال في المذكرة على اليمين، ثم اختر إجابتك المناسبة في ورقة الاستبيان بالأسفل لتصحيحها فوراً:</p>
-      
-      <form id="homeworkQuestionsForm" onsubmit="event.preventDefault(); submitHomeworkExam();">
-        <div id="examQuestionsRenderArea">
-          <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
-        </div>
-        
-        <button type="submit" class="btn-custom" style="background: var(--success); margin-top: 20px; font-size: 15px; padding: 12px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">🚀 إنهاء وحفظ الإجابات وتسجيل الدرجة</button>
-      </form>
-    </div>
-  </div>
-</div>
-</body></html>`;
 win.document.write(html);
 win.document.close();
 }
@@ -1775,6 +1579,8 @@ document.getElementById('studentProfileDetails').innerHTML = `
 </div>
 ${subProgress}
 `;
+renderStudentFoldersAndFiles(student);
+
 }
 
 function studentLoginByCode(codeToTest) {
@@ -3717,6 +3523,205 @@ document.addEventListener('keydown', (e) => {
 });
 
 </script>
+
+
+<!-- زر الإضافة العائم في لوحة التحكم (الآدمن) -->
+<div id="adminFloatingAddBtn" class="admin-floating-add-btn" onclick="openContentManagerModal(); playClickSound();" title="مركز إدارة الملفات والكتب والواجبات">+</div>
+
+<!-- مودال مركز إدارة الملفات والكتب والواجبات (للآدمن) -->
+<div id="contentManagerModal" class="custom-modal-overlay">
+  <div class="custom-modal-container">
+    <div class="custom-modal-header">
+      <h3>📂 مركز إدارة المحتوى والواجبات والكتب الذكي (مستر يسر الموافي)</h3>
+      <button class="custom-modal-close" onclick="closeContentManagerModal(); playClickSound();">إغلاق ✗</button>
+    </div>
+    
+    <div class="modal-tabs">
+      <button id="tabBtnCreateFolder" class="modal-tab-btn active" onclick="switchModalTab('createFolder')">📁 إنشاء مجلد جديد</button>
+      <button id="tabBtnUploadFile" class="modal-tab-btn" onclick="switchModalTab('uploadFile')">📄 رفع ملف وصلاحياته</button>
+      <button id="tabBtnSubmissions" class="modal-tab-btn" onclick="switchModalTab('submissions')">🏆 كشف تسليمات الواجبات</button>
+    </div>
+
+    <!-- Tab 1: Create Folder -->
+    <div id="modalTabCreateFolder" class="modal-tab-content" style="display: block;">
+      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
+        <h3>📁 إنشاء مجلد أو مادة جديدة لمكتبة السنتر</h3>
+        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اسم المجلد / الكتاب (مثال: كتاب المحاسبة المالية، مراجعة شهر يناير):</label>
+        <input type="text" id="newFolderNameInput" placeholder="أدخل اسم المجلد...">
+        
+        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">المادة الموجه لها هذا المجلد:</label>
+        <select id="folderSubjectInput">
+          <option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)</option>
+          <option value="محاسبة مالية">محاسبة مالية فقط</option>
+          <option value="إدارة أعمال">إدارة أعمال فقط</option>
+        </select>
+        
+        <button class="btn-custom" onclick="createContentFolder(); playClickSound();" style="background: var(--success);">+ إنشاء المجلد ونشره فوراً</button>
+      </div>
+      
+      <div class="card-box">
+        <h3>📂 المجلدات الحالية المسجلة</h3>
+        <div id="adminFoldersList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
+          <!-- سيتم سرد المجلدات هنا -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Upload File & Permissions -->
+    <div id="modalTabUploadFile" class="modal-tab-content" style="display: none;">
+      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
+        <h3>📄 رفع مذكرات أو امتحانات مباشرة من كمبيوترك</h3>
+        
+        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر المجلد المستهدف لرفع الملف بداخله:</label>
+        <select id="fileFolderSelect">
+          <option value="">-- اختر المجلد --</option>
+        </select>
+
+        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">عنوان الملف أو المذكرة (مثال: مذكرة شرح المحاسبة، أسئلة الواجب):</label>
+        <input type="text" id="newFileNameInput" placeholder="أدخل عنوان الملف للتلميذ...">
+
+        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر الملف من جهازك (PDF أو صور):</label>
+        <input type="file" id="newFileField" accept="application/pdf, image/*" style="margin-bottom: 12px;">
+
+        <!-- شريط التقدم للرفع -->
+        <div id="uploadProgressContainer" style="display: none; margin-bottom: 15px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <span style="color: var(--accent); font-weight: bold;">⏳ جارِ رفع الملف السحابي...</span>
+            <span id="uploadProgressPercent" style="font-weight: bold;">0%</span>
+          </div>
+          <progress id="uploadProgressBar" value="0" max="100"></progress>
+        </div>
+
+        <!-- إعدادات الصلاحيات للتحكم بالتنزيل -->
+        <div class="toggle-switch-container">
+          <span class="toggle-switch-label">📥 السماح للطالب بتحميل وتنزيل الملف على جهازه:</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="fileDownloadPermInput" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- إعدادات الواجب التفاعلي -->
+        <div class="toggle-switch-container" style="border-color: #f59e0b;">
+          <span class="toggle-switch-label" style="color: #f59e0b;">📝 هل هذا الملف يمثل واجب أو امتحان تفاعلي؟</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="fileIsHomeworkInput" onchange="toggleHomeworkBuilderArea()">
+            <span class="slider" style="background-color: #4b5563;"></span>
+          </label>
+        </div>
+
+        <!-- بناء أسئلة الواجب التفاعلي -->
+        <div id="homeworkBuilderArea" style="display: none; border: 1px solid #f59e0b; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.03); margin-bottom: 12px;">
+          <h4 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 13px;">📝 مصمم أسئلة الواجب التفاعلي (مؤقت ساعة)</h4>
+          
+          <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">مدة الامتحان بالدقائق (افتراضي 60 دقيقة):</label>
+          <input type="number" id="homeworkDurationInput" value="60" style="max-width: 120px;">
+
+          <div id="homeworkQuestionsContainer">
+            <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
+          </div>
+          
+          <button class="btn-custom" onclick="addNewHomeworkQuestionRow(); playClickSound();" style="background: #f59e0b; color: #111; max-width: 200px; font-size: 11px; padding: 6px;">+ إضافة سؤال اختيار من متعدد</button>
+        </div>
+
+        <button id="uploadContentBtn" class="btn-custom" onclick="uploadAndPublishFile(); playClickSound();" style="background: var(--accent);">🚀 رفع الملف ونشره للطلاب</button>
+      </div>
+      
+      <div class="card-box">
+        <h3>📄 المذكرات والملفات المنشورة في المجلدات</h3>
+        <div id="adminFilesList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
+          <!-- سيتم سرد الملفات المرفوعة هنا -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Homework Submissions -->
+    <div id="modalTabSubmissions" class="modal-tab-content" style="display: none;">
+      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
+        <h3>🏆 كشف تسليمات الواجبات والامتحانات التفاعلية</h3>
+        <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">راقب كشف تصحيح الواجبات للطلاب تلقائياً ومستواهم مادة بمادة:</p>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+          <input type="text" id="submissionsSearchInput" placeholder="البحث باسم الطالب أو الواجب..." oninput="renderAdminSubmissionsTable()" style="flex: 1; margin:0;">
+          <button class="btn-custom" onclick="clearSubmissionsSearch(); playClickSound();" style="width: auto; padding: 8px 15px; margin:0;">عرض الكل</button>
+        </div>
+
+        <div style="overflow-x: auto; max-height: 350px;">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم الطالب (الكود)</th>
+                <th>اسم الواجب</th>
+                <th>الدرجة النهائية</th>
+                <th>الوقت المستغرق</th>
+                <th>تاريخ التسليم</th>
+                <th>التحكم</th>
+              </tr>
+            </thead>
+            <tbody id="adminSubmissionsTableBody">
+              <!-- سيتم تعبئة درجات الطلاب هنا -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال قارئ الملفات الآمن والشفاف للمتصفح (عرض مؤمن لمنع التحميل) -->
+<div id="secureFileViewerModal" class="custom-modal-overlay">
+  <div class="custom-modal-container" style="max-width: 900px; padding: 15px;">
+    <div class="custom-modal-header" style="margin-bottom: 10px;">
+      <h3 id="secureViewerTitle">👁️ قارئ المذكرات والكتب المحمي</h3>
+      <button class="custom-modal-close" onclick="closeSecureFileViewer(); playClickSound();">إغلاق القارئ ✗</button>
+    </div>
+    <div style="position: relative; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+      <!-- طبقة حماية شفافة لمنع سحب الملف أو الضغط كليك يمين لتأمين الكتاب -->
+      <div id="viewerOverlayProtection" class="exam-protection-overlay" style="display: block;"></div>
+      <iframe id="secureViewerIframe" class="secure-viewer-iframe" src=""></iframe>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; color: var(--text-muted);">
+      <span>🔒 هذا الملف معروض تحت نظام الحماية الذكي لمكتبة مستر يسر الموافي</span>
+      <span id="secureViewerDownloadLinkArea"></span>
+    </div>
+  </div>
+</div>
+
+<!-- لوحة الامتحان والواجب التفاعلي بملء الشاشة للطالب -->
+<div id="interactiveExamPanel" class="exam-fullscreen-container">
+  <div class="exam-header">
+    <div style="display: flex; flex-direction: column;">
+      <h3 id="examHomeworkTitle" style="margin: 0; color: var(--accent); font-size: 16px;">اسم الامتحان التفاعلي</h3>
+      <small style="color: var(--text-muted);" id="examStudentName">الطالب: ---</small>
+    </div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+      <div id="examCountdownTimer" class="exam-timer">60:00</div>
+      <button class="custom-modal-close" onclick="triggerHomeworkForcedExit();" style="padding: 6px 15px;">تسجيل الخروج والانسحاب ✗</button>
+    </div>
+  </div>
+  
+  <div class="exam-body-grid">
+    <!-- الباب الأيمن: ورقة شرح أو أسئلة الواجب المعروضة كـ PDF محمي -->
+    <div class="exam-pdf-pane">
+      <div class="exam-protection-overlay"></div>
+      <iframe id="examPdfIframe" style="width: 100%; height: 100%; border: none;" src=""></iframe>
+    </div>
+    
+    <!-- الباب الأيسر: الاستبيان والأسئلة الاختيارية للحل التفاعلي والتصحيح -->
+    <div class="exam-questions-pane">
+      <h4 style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; color: #3b82f6;">📋 ورقة الإجابة والتصحيح الإلكتروني الفوري:</h4>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px;">اقرأ السؤال في المذكرة على اليمين، ثم اختر إجابتك المناسبة في ورقة الاستبيان بالأسفل لتصحيحها فوراً:</p>
+      
+      <form id="homeworkQuestionsForm" onsubmit="event.preventDefault(); submitHomeworkExam();">
+        <div id="examQuestionsRenderArea">
+          <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
+        </div>
+        
+        <button type="submit" class="btn-custom" style="background: var(--success); margin-top: 20px; font-size: 15px; padding: 12px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">🚀 إنهاء وحفظ الإجابات وتسجيل الدرجة</button>
+      </form>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
