@@ -26,31 +26,21 @@ const db = getDatabase(app);
 // ربط البيانات السحابية بلحظيتها
 window.initFirebaseSync = function(onDataLoaded) {
 onValue(ref(db, 'systemData'), (snapshot) => {
-const data = snapshot.val();
-if (data) {
-if (data.students) localStorage.setItem('ysr_sys_st_2027', JSON.stringify(data.students));
-if (data.attRequests) localStorage.setItem('ysr_sys_att_2027', JSON.stringify(data.attRequests));
-if (data.attendanceLog) localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(data.attendanceLog));
-if (data.paymentLog) localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(data.paymentLog));
-if (data.auditLog) localStorage.setItem('ysr_sys_audit_2027', JSON.stringify(data.auditLog));
-if (data.payRequests) localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(data.payRequests));
-if (data.income !== undefined) localStorage.setItem('ysr_sys_inc_2027', data.income);
-if (data.expenses !== undefined) localStorage.setItem('ysr_sys_exp_2027', data.expenses);
-if (data.incomeLog) localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(data.incomeLog));
-if (data.expensesLog) localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(data.expensesLog));
-if (data.customSchedules) localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(data.customSchedules));
-} else {
-// تصفير حقيقي عند تفريغ السيرفر، مع الاحتفاظ بأسماء الطلاب محلياً لحمايتها
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_pay_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_audit_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_inc_2027', 0);
-localStorage.setItem('ysr_sys_exp_2027', 0);
-localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
-}
+const data = snapshot.val() || {};
+
+// مزامنة كاملة وموثوقة لضمان مسح البيانات تماماً عند التصفير وعدم عودتها
+localStorage.setItem('ysr_sys_st_2027', JSON.stringify(data.students || []));
+localStorage.setItem('ysr_sys_att_2027', JSON.stringify(data.attRequests || []));
+localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(data.attendanceLog || []));
+localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(data.paymentLog || []));
+localStorage.setItem('ysr_sys_audit_2027', JSON.stringify(data.auditLog || []));
+localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(data.payRequests || []));
+localStorage.setItem('ysr_sys_inc_2027', data.income !== undefined ? data.income : 0);
+localStorage.setItem('ysr_sys_exp_2027', data.expenses !== undefined ? data.expenses : 0);
+localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(data.incomeLog || []));
+localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(data.expensesLog || []));
+localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(data.customSchedules || []));
+
 if (typeof onDataLoaded === 'function') onDataLoaded();
 });
 };
@@ -1191,9 +1181,13 @@ document.getElementById('welcomeStudentName').innerText = `أهلاً بك يا 
 document.getElementById('stAttDays').innerText = attCount;
 document.getElementById('stAbsDays').innerText = absCount;
 document.getElementById('stGroupBadge').innerText = `${student.subject || 'عامة'} (${student.group || 'مجموعة عامة'}) - ${student.groupTime || 'غير محدد'}`;
+
+let subProgress = getSubscriptionProgressHtml(student);
+
 document.getElementById('studentProfileDetails').innerHTML = `
 <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'عامة'} | <b>المجموعة والموعد:</b> ${student.group || 'عامة'} (${student.groupTime || 'غير محدد'})<br>
-<b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'};">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+<b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+${subProgress}
 `;
 }
 
@@ -1750,9 +1744,32 @@ localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
 
 const paidStudent = students.find(s => s.id === p.studentId) || students[p.studentIndex];
 if (paidStudent) {
-if (paidStudent.due > 0) {
-paidStudent.due = Math.max(0, paidStudent.due - p.amount);
-}
+  // التحقق الذكي من أن الدفع يخص اشتراك شهري مستحق أو منتهى الصلاحية
+  const isSubscriptionPayment = p.subject.includes("اشتراك") || p.details.includes("اشتراك") || (p.amount === paidStudent.monthlyFee) || isSubscriptionExpired(paidStudent);
+  
+  if (paidStudent.monthlyFee > 0 && isSubscriptionPayment) {
+    // تصفير وتجديد صلاحية الاشتراك تلقائياً عند قبول الطلب
+    let baseDate = new Date();
+    if (paidStudent.expiryDate) {
+      let parts = paidStudent.expiryDate.split('-');
+      let exp = new Date(parts[0], parts[1]-1, parts[2]);
+      if (!isNaN(exp.getTime())) {
+        baseDate = exp;
+      }
+    }
+    if (baseDate < new Date()) {
+      baseDate = new Date();
+    }
+    baseDate.setMonth(baseDate.getMonth() + 1);
+    let newExpiryStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
+    
+    paidStudent.expiryDate = newExpiryStr;
+    paidStudent.lastPaidMonth = getCurrentMonthKeyEgypt();
+    addAudit('تجديد اشتراك', `تم قبول طلب الدفع للطالب ${paidStudent.name} وتجديد صلاحية اشتراكه حتى ${newExpiryStr}`);
+  } else if (paidStudent.due > 0) {
+    // خصم من مديونية الالتزامات الأخرى
+    paidStudent.due = Math.max(0, paidStudent.due - p.amount);
+  }
 }
 paymentLog = paymentLog || [];
 paymentLog.push({ studentId: p.studentId, name: p.name, amount: p.amount, type: p.type, paidAt: new Date().toLocaleString('ar-EG') });
@@ -1768,7 +1785,7 @@ localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
 addAudit('مراجعة المدفوعات', `تم اعتماد حالة (${p.type}) للطالب ${p.name} بمبلغ ${p.amount} ج.م`);
 commitChanges(['incomeLog', 'paymentLog', 'income', 'students', 'payRequests', 'auditLog']);
 updateAdminDashboard();
-alert("تم اعتماد معاملة المدفوعات بنجاح ومسح الطلب من المعلقة فوراً!");
+alert("تم اعتماد معاملة المدفوعات بنجاح وتصفير مستحقات الاشتراك ومسح الطلب فوراً!");
 }
 
 function rejectPaymentAction(requestId) {
@@ -2033,6 +2050,8 @@ let isExpired = isSubscriptionExpired(s);
 let expiryText = s.expiryDate ? s.expiryDate : 'غير محدد';
 let expiryColor = isExpired ? 'var(--danger)' : 'var(--success)';
 
+let subProgress = getSubscriptionProgressHtml(s);
+
 sHtml += `<tr style="background:${rowBg}">
 <td>${s.id} ${isWarning ? '⚠️' : ''}</td>
 <td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absCount + ')</small>' : ''}</td>
@@ -2043,9 +2062,10 @@ sHtml += `<tr style="background:${rowBg}">
 <span style="color:var(--danger);">غياب: ${absCount}</span><br>
 <span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">ديون التزامات: ${s.due} ج.م</span>
 ${s.monthlyFee > 0 ? `<br><span style="color:${expiryColor}; font-weight:bold;">الاشتراك: ${s.monthlyFee} ج.م (ينتهي: ${expiryText} - ${isExpired ? 'منتهى ✗' : 'صالح ✓'})</span>` : ''}
+${subProgress}
 <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;">
-  ${isExpired && s.monthlyFee > 0 ? `<button onclick="directPaySubscription('${s.id}'); playClickSound();" class="btn-custom" style="background:var(--success); font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💵 دفع الاشتراك</button>` : ''}
-  ${s.due > 0 ? `<button onclick="directPayObligation('${s.id}'); playClickSound();" class="btn-custom" style="background:#059669; font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💰 دفع الالتزام</button>` : ''}
+  ${s.monthlyFee > 0 ? `<button onclick="directPaySubscription('${s.id}'); playClickSound();" class="btn-custom" style="background:var(--success); font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💵 دفع الاشتراك</button>` : ''}
+  <button onclick="directPayObligation('${s.id}'); playClickSound();" class="btn-custom" style="background:#059669; font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💰 دفع الالتزام</button>
 </div>
 </td>
 <td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
@@ -2082,35 +2102,134 @@ function isSubscriptionExpired(student) {
   return todayStr >= student.expiryDate;
 }
 
+function getSubscriptionProgressHtml(s) {
+  if (!s.monthlyFee || s.monthlyFee <= 0) return '';
+  if (!s.expiryDate) {
+    return `<div style="margin-top:4px; font-size:10px; color:var(--text-muted);">صلاحية الاشتراك: غير محددة</div>`;
+  }
+  
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const parts = s.expiryDate.split('-');
+  const expiry = new Date(parts[0], parts[1]-1, parts[2]);
+  expiry.setHours(0,0,0,0);
+  
+  const diffTime = expiry - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  let percent = 0;
+  let barColor = 'var(--danger)';
+  let textColor = 'var(--danger)';
+  let displayText = '';
+  
+  if (diffDays > 0) {
+    percent = Math.max(5, Math.min(100, (diffDays / 30) * 100)); // assume 30-day billing cycle
+    if (diffDays > 15) {
+      barColor = '#22c55e'; // green
+      textColor = '#22c55e';
+    } else if (diffDays > 5) {
+      barColor = '#eab308'; // yellow
+      textColor = '#eab308';
+    } else {
+      barColor = '#ef4444'; // red
+      textColor = '#ef4444';
+    }
+    displayText = `متبقي ${diffDays} يوم`;
+  } else {
+    percent = 0;
+    barColor = '#ef4444';
+    textColor = '#ef4444';
+    displayText = diffDays === 0 ? 'ينتهي اليوم ⚠️' : `منتهي منذ ${Math.abs(diffDays)} يوم ⚠️`;
+  }
+  
+  return `
+    <div style="margin-top: 6px; text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+        <span style="font-size: 10px; color: var(--text-muted);">صلاحية الاشتراك:</span>
+        <span style="font-size: 10px; color: ${textColor}; font-weight: bold;">${displayText}</span>
+      </div>
+      <div style="width: 100%; background: rgba(0, 0, 0, 0.2); border-radius: 10px; height: 6px; overflow: hidden; border: 1px solid var(--border);">
+        <div style="width: ${percent}%; background: ${barColor}; height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+  `;
+}
+
 function renderSubscriptionAlerts() {
   const alertBox = document.getElementById('subscriptionAlertBox');
   const tbody = document.getElementById('unpaidSubscriptionsList');
   if (!alertBox || !tbody) return;
 
-  const expiredStudents = students.filter(s => isSubscriptionExpired(s));
+  // تنبيه عام لو الطالب عليه فلوس اشتراك أو التزامات لم تدفع بعد
+  const delinquentStudents = students.filter(s => isSubscriptionExpired(s) || (s.due && s.due > 0));
 
-  if (expiredStudents.length === 0) {
+  if (delinquentStudents.length === 0) {
     alertBox.style.display = 'none';
     return;
   }
 
   alertBox.style.display = 'block';
+  
+  const titleEl = alertBox.querySelector('h3');
+  if (titleEl) {
+    titleEl.innerHTML = `⚠️ تنبيهات المستحقات المالية المتأخرة (اشتراكات أو التزامات)`;
+  }
+
   let html = '';
   const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
 
-  expiredStudents.forEach(s => {
+  delinquentStudents.forEach(s => {
+    let isExpired = isSubscriptionExpired(s);
+    let hasObligation = s.due && s.due > 0;
+    
+    let statusText = '';
+    let amountText = '';
+    let actionsHtml = '';
+    
     let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
-    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nتم انتهاء اشتراكك يرجي دفع الاشتراك لتجديد الصلاحيه بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* لتجديد كارت السنتر الخاص بك.`;
+    let msg = '';
+    
+    if (isExpired && hasObligation) {
+      statusText = `اشتراك منتهى (${s.monthlyFee} ج.م) + التزام (${s.due} ج.م)`;
+      amountText = `${s.monthlyFee + s.due} ج.م`;
+      msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nيرجى تسوية مستحقاتك المتأخرة بقيمة *${s.monthlyFee + s.due} ج.م* التفاصيل: اشتراك شهري (*${s.monthlyFee} ج.م*) + التزامات عامة (*${s.due} ج.م*).\nيرجى السداد في الحصة القادمة لتجنب إيقاف كارت السنتر.`;
+      
+      actionsHtml = `
+        <button onclick="directPaySubscription('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 2px 0;">💵 دفع الاشتراك</button>
+        <button onclick="directPayObligation('${s.id}')" class="btn-custom" style="background: #059669; font-size: 11px; padding: 4px 8px; width: auto; margin: 2px 0;">💰 دفع الالتزام</button>
+      `;
+    } else if (isExpired) {
+      statusText = `اشتراك شهري مستحق`;
+      amountText = `${s.monthlyFee} ج.م`;
+      msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nتم انتهاء اشتراكك يرجي دفع الاشتراك لتجديد الصلاحيه بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* لتجديد كارت السنتر الخاص بك.`;
+      
+      actionsHtml = `
+        <button onclick="directPaySubscription('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 2px 0;">💵 دفع الاشتراك</button>
+      `;
+    } else if (hasObligation) {
+      statusText = `التزام مالي متأخر`;
+      amountText = `${s.due} ج.م`;
+      msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nيرجى سداد الالتزامات المالية المتأخرة عليك بقيمة *${s.due} ج.م*.\nبرجاء المبادرة بالسداد في الحصة القادمة.`;
+      
+      actionsHtml = `
+        <button onclick="directPayObligation('${s.id}')" class="btn-custom" style="background: #059669; font-size: 11px; padding: 4px 8px; width: auto; margin: 2px 0;">💰 دفع الالتزام</button>
+      `;
+    }
+    
     let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     
     html += `<tr>
       <td><b>${s.name}</b><br><small style="color: var(--text-muted);">${s.id}</small></td>
-      <td style="color: var(--danger); font-weight: bold;">${s.monthlyFee} ج.م</td>
+      <td style="color: var(--danger); font-weight: bold;">
+        ${amountText}<br>
+        <small style="color: var(--text-muted); font-size: 9px; font-weight: normal;">${statusText}</small>
+      </td>
       <td>${s.phone || 'بدون'}</td>
       <td>
-        <div class="action-btns">
+        <div class="action-btns" style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
           <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
-          <button onclick="directPaySubscription('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
+          ${actionsHtml}
         </div>
       </td>
     </tr>`;
