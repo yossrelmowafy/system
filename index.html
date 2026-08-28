@@ -1339,8 +1339,7 @@ let attCount = attendanceLog.filter(a => a.studentId === s.id).length;
 let absCount = s.absentDays || 0;
 html += `<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</td><td>${s.phone || 'بدون'}</td><td>حضور: ${attCount} | غياب: ${absCount}</td><td style="color:${s.due > 0 ? 'red' : 'green'};">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً'}</td></tr>`;
 });
-html += `</tbody></table><script>window.print();<\/script>
-html += `</body></html>`;
+html += `</tbody></table><script>window.print();<\/script></body></html>`;
 
 win.document.write(html);
 win.document.close();
