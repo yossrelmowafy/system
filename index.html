@@ -1184,9 +1184,27 @@ document.getElementById('stGroupBadge').innerText = `${student.subject || 'عا�
 
 let subProgress = getSubscriptionProgressHtml(student);
 
+let subOwed = isSubscriptionExpired(student) ? (student.monthlyFee || 0) : 0;
+let obligationsOwed = student.due || 0;
+let totalOwed = subOwed + obligationsOwed;
+
 document.getElementById('studentProfileDetails').innerHTML = `
 <b>كودك:</b> ${student.id} | <b>المادة:</b> ${student.subject || 'عامة'} | <b>المجموعة والموعد:</b> ${student.group || 'عامة'} (${student.groupTime || 'غير محدد'})<br>
-<b>الموقف المالي:</b> <span style="color:${student.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">${student.due > 0 ? 'عليك مبالغ بـ ' + student.due + ' ج.م' : 'حسابك خالص تماماً ✓'}</span>
+<div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid var(--border); font-size: 12px; line-height: 1.6;">
+  <b style="color: var(--accent); font-size: 13px; display: block; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">📊 تفاصيل الموقف المالي:</b>
+  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+    <span>• إجمالي الاشتراك المستحق:</span>
+    <span style="font-weight: bold; color: ${subOwed > 0 ? 'var(--danger)' : 'var(--success)'};">${subOwed} ج.م</span>
+  </div>
+  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+    <span>• إجمالي الالتزامات الأخرى (مذكرات/امتحانات):</span>
+    <span style="font-weight: bold; color: ${obligationsOwed > 0 ? 'var(--danger)' : 'var(--success)'};">${obligationsOwed} ج.م</span>
+  </div>
+  <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 13px; font-weight: bold;">
+    <span>• الإجمالي المطلوب سداده:</span>
+    <span style="color: ${totalOwed > 0 ? 'var(--danger)' : 'var(--success)'}; font-size: 14px;">${totalOwed} ج.م</span>
+  </div>
+</div>
 ${subProgress}
 `;
 }
