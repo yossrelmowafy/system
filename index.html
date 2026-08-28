@@ -459,6 +459,7 @@ transition: 0.4s ease-in-out;
 <button class="btn-custom" onclick="printIncomeReport(); playClickSound();" style="background: #16a34a; font-size: 12px; padding: 8px;">💵 طباعة تفاصيل الإيرادات</button>
 <button class="btn-custom" onclick="printExpensesReport(); playClickSound();" style="background: #dc2626; font-size: 12px; padding: 8px;">📉 طباعة تفاصيل المصروفات</button>
 <button class="btn-custom" onclick="printAttendanceReport(); playClickSound();" style="background: #7c3aed; font-size: 12px; padding: 8px;">✅ طباعة الحضور والغياب</button>
+<button class="btn-custom" onclick="renderFirstOfMonthAlerts(true); playClickSound();" style="background: #eab308; font-size: 12px; padding: 8px; color: #111; font-weight: bold;">📅 كشف مطالبة أول الشهر</button>
 </div>
 </div>
 
@@ -487,6 +488,28 @@ transition: 0.4s ease-in-out;
     <tbody id="unpaidSubscriptionsList"></tbody>
   </table>
 </div>
+</div>
+
+<!-- كشف المطالبة المالي الشامل (تنبيه أول الشهر) -->
+<div id="firstOfMonthAlertBox" class="card-box" style="border: 2px solid #eab308; background: rgba(234, 179, 8, 0.1); display: none; margin-bottom: 12px;">
+  <h3 style="color: #eab308; border-bottom: 1px solid rgba(234, 179, 8, 0.2); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px;">
+    <span>📅 كشف المطالبة المالي الشهري (اليوم 1 من الشهر)</span>
+    <span style="font-size: 11px; background: #eab308; color: #111; padding: 2px 6px; border-radius: 4px; font-weight: bold;">متأخرات ومستحقات</span>
+  </h3>
+  <p style="font-size: 11px; color: var(--text-muted); margin-top: 0; margin-bottom: 8px;">الطلاب المدرجين أدناه لديهم مديونيات متأخرة أو اشتراكات مستحقة مع بداية هذا الشهر الجديد:</p>
+  <div style="overflow-x: auto; max-height: 250px;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: rgba(234, 179, 8, 0.15); color: var(--text-main);">
+          <th>الطالب</th>
+          <th>النوع والمبلغ</th>
+          <th>الهاتف</th>
+          <th>الإجراء السريع</th>
+        </tr>
+      </thead>
+      <tbody id="firstOfMonthList"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- محرك البحث الذكي عن أي طالب -->
@@ -615,9 +638,10 @@ transition: 0.4s ease-in-out;
 <option value="عامة">مجموعة عامة</option>
 </select>
 <input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)">
-<label style="font-size:11px; color:var(--text-muted);">ثمن الاشتراك الشهري المحدد (أو 0):</label>
-<input type="number" id="newSMonthlyFee" placeholder="قيمة الاشتراك الشهري (مثلاً: 200)">
-<input type="number" id="newSMonthlyFee" placeholder="ثمن الاشتراك الشهري المحدد (ج.م) (أو 0)">
+<label style="font-size:11px; color:var(--text-muted); font-weight: bold;">ثمن الاشتراك الشهري المحدد (ج.م) (أو 0):</label>
+<input type="number" id="newSMonthlyFee" placeholder="ثمن الاشتراك الشهري المحدد (ج.م) (مثلاً: 300)">
+<label style="font-size:11px; color:var(--text-muted); font-weight: bold;">تاريخ انتهاء صلاحية الاشتراك (صلاحية الكارت):</label>
+<input type="date" id="newSExpiryDate">
 <button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود</button>
 <div style="text-align: center; margin-top: 8px;"><div id="newStudentQr" style="display: inline-block; background: white; padding: 4px; border-radius: 6px;"></div></div>
 </div>
@@ -1537,6 +1561,7 @@ let subject = document.getElementById('newSSubject').value;
 let groupFull = document.getElementById('newSGroupSelect').value; // تتضمن المجموعة والموعد مقسومين بـ |
 let due = parseFloat(document.getElementById('newSDueManual').value) || 0;
 let monthlyFee = parseFloat(document.getElementById('newSMonthlyFee').value) || 0;
+let expiryDate = document.getElementById('newSExpiryDate').value;
 if (!name) { alert("أدخل اسم الطالب"); return; }
 
 let groupName = "عامة";
@@ -1570,6 +1595,7 @@ student.group = groupName;
 student.groupTime = groupTime;
 student.due = due;
 student.monthlyFee = monthlyFee;
+student.expiryDate = expiryDate;
 }
 window.currentEditingOldId = null;
 document.getElementById('editIdWrapper').style.display = 'none';
@@ -1584,18 +1610,19 @@ if (exists) {
   alert("⚠️ كود الطالب هذا مسجل بالفعل لطالب آخر!");
   return;
 }
-students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0, monthlyFee: monthlyFee, lastPaidMonth: '' });
+students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0, monthlyFee: monthlyFee, expiryDate: expiryDate, lastPaidMonth: '' });
 let fullCardUrl = window.location.origin + window.location.pathname + "?code=" + id;
 document.getElementById("newStudentQr").innerHTML = "";
 new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 80, height: 80 });
 alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
 }
 localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges();
+commitChanges(['students']);
 document.getElementById('newSName').value = ''; 
 document.getElementById('newSPhone').value = ''; 
 document.getElementById('newSDueManual').value = '';
 document.getElementById('newSMonthlyFee').value = '';
+document.getElementById('newSExpiryDate').value = '';
 document.getElementById('editStudentId').value = '';
 updateAdminDashboard();
 }
@@ -1611,6 +1638,7 @@ document.getElementById('newSPhone').value = student.phone || '';
 document.getElementById('newSSubject').value = student.subject || 'محاسبة مالية وإدارة أعمال';
 document.getElementById('newSDueManual').value = student.due;
 document.getElementById('newSMonthlyFee').value = student.monthlyFee || '';
+document.getElementById('newSExpiryDate').value = student.expiryDate || '';
 document.getElementById('studentFormTitle').innerText = `✏️ تعديل: ${student.name}`;
 document.getElementById('studentSubmitBtn').innerText = 'تحديث البيانات';
 window.scrollTo({ top: 200, behavior: 'smooth' });
@@ -1888,6 +1916,7 @@ renderAttendanceHistory();
 
 function updateAdminDashboard() {
 renderSubscriptionAlerts();
+renderFirstOfMonthAlerts();
 
 document.getElementById('totInc').innerText = income;
 document.getElementById('totExp').innerText = expenses;
@@ -2000,6 +2029,10 @@ students.forEach((s, idx) => {
 let absCount = s.absentDays || 0;
 let isWarning = absCount >= 2;
 let rowBg = isWarning ? 'background: rgba(239, 68, 68, 0.15);' : '';
+let isExpired = isSubscriptionExpired(s);
+let expiryText = s.expiryDate ? s.expiryDate : 'غير محدد';
+let expiryColor = isExpired ? 'var(--danger)' : 'var(--success)';
+
 sHtml += `<tr style="background:${rowBg}">
 <td>${s.id} ${isWarning ? '⚠️' : ''}</td>
 <td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absCount + ')</small>' : ''}</td>
@@ -2008,8 +2041,12 @@ sHtml += `<tr style="background:${rowBg}">
 <td>
 <span style="color:var(--success);">حضور: ${attendanceLog.filter(a => a.studentId === s.id).length}</span> |
 <span style="color:var(--danger);">غياب: ${absCount}</span><br>
-<span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'};">ديون: ${s.due} ج.م</span>
-${s.monthlyFee > 0 ? `<br><span style="color:${s.lastPaidMonth === getCurrentMonthKeyEgypt() ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">الاشتراك: ${s.monthlyFee} ج.م (${s.lastPaidMonth === getCurrentMonthKeyEgypt() ? 'تم الدفع' : 'لم يدفع'})</span>` : ''}
+<span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">ديون التزامات: ${s.due} ج.م</span>
+${s.monthlyFee > 0 ? `<br><span style="color:${expiryColor}; font-weight:bold;">الاشتراك: ${s.monthlyFee} ج.م (ينتهي: ${expiryText} - ${isExpired ? 'منتهى ✗' : 'صالح ✓'})</span>` : ''}
+<div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;">
+  ${isExpired && s.monthlyFee > 0 ? `<button onclick="directPaySubscription('${s.id}'); playClickSound();" class="btn-custom" style="background:var(--success); font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💵 دفع الاشتراك</button>` : ''}
+  ${s.due > 0 ? `<button onclick="directPayObligation('${s.id}'); playClickSound();" class="btn-custom" style="background:#059669; font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💰 دفع الالتزام</button>` : ''}
+</div>
 </td>
 <td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
 <td>
@@ -2038,28 +2075,32 @@ function getCurrentMonthKeyEgypt() {
   return year + '-' + month;
 }
 
+function isSubscriptionExpired(student) {
+  if (!student.monthlyFee || student.monthlyFee <= 0) return false;
+  if (!student.expiryDate) return true;
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }); // YYYY-MM-DD
+  return todayStr >= student.expiryDate;
+}
+
 function renderSubscriptionAlerts() {
   const alertBox = document.getElementById('subscriptionAlertBox');
   const tbody = document.getElementById('unpaidSubscriptionsList');
   if (!alertBox || !tbody) return;
 
-  const currentMonthKey = getCurrentMonthKeyEgypt();
-  const unpaidStudents = students.filter(s => s.monthlyFee > 0 && s.lastPaidMonth !== currentMonthKey);
+  const expiredStudents = students.filter(s => isSubscriptionExpired(s));
 
-  if (unpaidStudents.length === 0) {
+  if (expiredStudents.length === 0) {
     alertBox.style.display = 'none';
     return;
   }
 
   alertBox.style.display = 'block';
   let html = '';
-  
-  // Get Arabic current month name
   const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
 
-  unpaidStudents.forEach(s => {
+  expiredStudents.forEach(s => {
     let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
-    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nنود تذكيرك بسداد ثمن الاشتراك الشهري المحدد بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* والمستحق منذ يوم 1 من الشهر.\nيرجى المبادرة بالسداد في أقرب وقت.`;
+    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nتم انتهاء اشتراكك يرجي دفع الاشتراك لتجديد الصلاحيه بقيمة *${s.monthlyFee} ج.م* لشهر *${arabicMonthName}* لتجديد كارت السنتر الخاص بك.`;
     let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     
     html += `<tr>
@@ -2069,7 +2110,7 @@ function renderSubscriptionAlerts() {
       <td>
         <div class="action-btns">
           <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
-          <button onclick="confirmSubscriptionPayment('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
+          <button onclick="directPaySubscription('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">✅ إثبات الدفع</button>
         </div>
       </td>
     </tr>`;
@@ -2078,43 +2119,151 @@ function renderSubscriptionAlerts() {
   tbody.innerHTML = html;
 }
 
-function confirmSubscriptionPayment(id) {
+function directPaySubscription(id) {
   const student = students.find(s => s.id === id);
   if (!student) return;
-
-  const currentMonthKey = getCurrentMonthKeyEgypt();
-  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
   const amount = student.monthlyFee;
-
-  student.lastPaidMonth = currentMonthKey;
+  if (!amount || amount <= 0) {
+    alert("برجاء تحديد قيمة الاشتراك الشهري لهذا الطالب أولاً!");
+    return;
+  }
   
-  // Also, record the payment in the income log and income total!
+  // Calculate new expiration date (30 days/1 month from previous expiry or from today if already expired)
+  let baseDate = new Date();
+  if (student.expiryDate) {
+    let parts = student.expiryDate.split('-');
+    let exp = new Date(parts[0], parts[1]-1, parts[2]);
+    if (!isNaN(exp.getTime())) {
+      baseDate = exp;
+    }
+  }
+  if (baseDate < new Date()) {
+    baseDate = new Date();
+  }
+  baseDate.setMonth(baseDate.getMonth() + 1);
+  let newExpiryStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
+  
+  student.expiryDate = newExpiryStr;
+  student.lastPaidMonth = getCurrentMonthKeyEgypt();
+  
   income += amount;
-  incomeLog.push({ 
-    name: student.name, 
-    subject: 'اشتراك شهر ' + arabicMonthName, 
-    details: 'دفع اشتراك شهري كاش من التنبيهات', 
-    amount: amount 
+  incomeLog.push({
+    name: student.name,
+    subject: 'تجديد اشتراك شهري',
+    details: `تجديد الصلاحية حتى ${newExpiryStr} كاش مباشرة`,
+    amount: amount
   });
-
+  
   paymentLog = paymentLog || [];
-  paymentLog.push({ 
-    studentId: student.id, 
-    name: student.name, 
-    amount: amount, 
-    type: 'تم الدفع', 
-    paidAt: new Date().toLocaleString('ar-EG') 
+  paymentLog.push({
+    studentId: student.id,
+    name: student.name,
+    amount: amount,
+    type: 'تم الدفع',
+    paidAt: new Date().toLocaleString('ar-EG')
   });
-
+  
   localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
   localStorage.setItem('ysr_sys_inc_2027', income);
   localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
   localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-
-  addAudit('تسجيل مدفوعات', `تم تسجيل دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بقيمة ${amount} ج.م`);
-  commitChanges();
+  
+  addAudit('تسجيل مدفوعات', `تم سداد وتجديد الاشتراك الشهري للطالب ${student.name} بقيمة ${amount} ج.م للموعد الجديد ${newExpiryStr}`);
+  commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
   updateAdminDashboard();
-  alert(`✅ تم إثبات دفع اشتراك شهر ${arabicMonthName} للطالب ${student.name} بنجاح وترحيله للتقارير!`);
+  alert(`✅ تم تجديد اشتراك الطالب ${student.name} بنجاح حتى تاريخ ${newExpiryStr}!`);
+}
+
+function directPayObligation(id) {
+  const student = students.find(s => s.id === id);
+  if (!student) return;
+  let amount = parseFloat(prompt(`أدخل المبلغ المدفوع من الالتزام المالي للطالب (الالتزام الحالي: ${student.due} ج.م):`, student.due));
+  if (isNaN(amount) || amount <= 0) return;
+  if (amount > student.due) {
+    alert("المبلغ المدفوع أكبر من الالتزام المالي المستحق!");
+    return;
+  }
+  student.due = Math.max(0, student.due - amount);
+  income += amount;
+  incomeLog.push({
+    name: student.name,
+    subject: 'سداد التزام مالي',
+    details: 'دفعة نقدية كاش للالتزامات والديون',
+    amount: amount
+  });
+  paymentLog = paymentLog || [];
+  paymentLog.push({
+    studentId: student.id,
+    name: student.name,
+    amount: amount,
+    type: 'تم الدفع',
+    paidAt: new Date().toLocaleString('ar-EG')
+  });
+  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
+  localStorage.setItem('ysr_sys_inc_2027', income);
+  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
+  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
+  addAudit('تسجيل مدفوعات', `تم سداد جزء من التزام الطالب ${student.name} بقيمة ${amount} ج.م المتبقي: ${student.due} ج.م`);
+  commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
+  updateAdminDashboard();
+  alert(`✅ تم إثبات سداد ${amount} ج.م بنجاح وترحيلها للإيرادات!`);
+}
+
+function renderFirstOfMonthAlerts(forceShow = false) {
+  const alertBox = document.getElementById('firstOfMonthAlertBox');
+  const tbody = document.getElementById('firstOfMonthList');
+  if (!alertBox || !tbody) return;
+
+  const is1st = (new Date().getDate() === 1);
+  const studentsWithMoney = students.filter(s => s.due > 0 || isSubscriptionExpired(s));
+
+  if (!forceShow && (!is1st || studentsWithMoney.length === 0)) {
+    alertBox.style.display = 'none';
+    return;
+  }
+
+  alertBox.style.display = 'block';
+  let html = '';
+  const arabicMonthName = new Date().toLocaleDateString('ar-EG', { month: 'long' });
+
+  studentsWithMoney.forEach(s => {
+    let debtType = '';
+    let amount = 0;
+    let isExpired = isSubscriptionExpired(s);
+    
+    if (s.due > 0 && isExpired) {
+      debtType = `اشتراك شهري (${s.monthlyFee} ج.م) + التزام (${s.due} ج.م)`;
+      amount = s.monthlyFee + s.due;
+    } else if (s.due > 0) {
+      debtType = `التزام مالي متأخر (${s.due} ج.م)`;
+      amount = s.due;
+    } else {
+      debtType = `اشتراك شهري مستحق (${s.monthlyFee} ج.m)`;
+      amount = s.monthlyFee;
+    }
+
+    let phone = s.phone ? s.phone.replace(/^0+/, '20') : '';
+    let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${s.name} 🌟\nنود تذكيرك بوجود مستحقات مالية عليك اليوم بقيمة *${amount} ج.م* التفاصيل: ${debtType} لشهر *${arabicMonthName}*.\nيرجى المبادرة بالسداد مع بداية الشهر الجديد.`;
+    let waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    html += `<tr>
+      <td><b>${s.name}</b><br><small style="color: var(--text-muted);">${s.id}</small></td>
+      <td>
+        <span style="color: var(--danger); font-weight: bold;">${amount} ج.م</span><br>
+        <small style="color: var(--text-muted); font-size: 10px;">${debtType}</small>
+      </td>
+      <td>${s.phone || 'بدون'}</td>
+      <td>
+        <div class="action-btns">
+          <a href="${waUrl}" target="_blank" class="whatsapp-badge" style="background: #25d366; font-size: 11px; padding: 4px 8px; margin: 0; text-decoration: none;">💬 مطالبة بالواتساب</a>
+          ${isExpired && s.monthlyFee > 0 ? `<button onclick="directPaySubscription('${s.id}')" class="btn-custom" style="background: var(--success); font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">💵 دفع الاشتراك</button>` : ''}
+          ${s.due > 0 ? `<button onclick="directPayObligation('${s.id}')" class="btn-custom" style="background: #059669; font-size: 11px; padding: 4px 8px; width: auto; margin: 0;">💰 دفع الالتزام</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html || '<tr><td colspan="4">لا يوجد طلاب عليهم أي مديونيات أو اشتراكات متأخرة حالياً! 👍</td></tr>';
 }
 </script>
 
