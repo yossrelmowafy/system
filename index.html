@@ -91,47 +91,23 @@ if (typeof onDataLoaded === 'function') onDataLoaded();
 
 window.saveSystemDataToCloud = function(nodes) {
 if (!nodes) {
-const payload = {
-students: JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]'),
-attRequests: JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]'),
-attendanceLog: JSON.parse(localStorage.getItem('ysr_sys_att_log_2027') || '[]'),
-payRequests: JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]'),
-income: parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0'),
-expenses: parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0'),
-incomeLog: JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]'),
-expensesLog: JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]'),
-customSchedules: JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]'),
-paymentLog: JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]'),
-auditLog: JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]'),
-// الجديد:
-folders: JSON.parse(localStorage.getItem('ysr_sys_folders_2027') || '[]'),
-files: JSON.parse(localStorage.getItem('ysr_sys_files_2027') || '[]'),
-submissions: JSON.parse(localStorage.getItem('ysr_sys_submissions_2027') || '[]')
-};
-set(ref(db, 'systemData'), payload);
-return;
+  console.warn("Full payload upload blocked on student app for security.");
+  return;
 }
 const nodeList = Array.isArray(nodes) ? nodes : [nodes];
 nodeList.forEach(node => {
-const dbRef = ref(db, 'systemData/' + node);
-let val;
-if (node === 'students') val = JSON.parse(localStorage.getItem('ysr_sys_st_2027') || '[]');
-else if (node === 'attRequests') val = JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]');
-else if (node === 'attendanceLog') val = JSON.parse(localStorage.getItem('ysr_sys_att_log_2027') || '[]');
-else if (node === 'payRequests') val = JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]');
-else if (node === 'income') val = parseFloat(localStorage.getItem('ysr_sys_inc_2027') || '0');
-else if (node === 'expenses') val = parseFloat(localStorage.getItem('ysr_sys_exp_2027') || '0');
-else if (node === 'incomeLog') val = JSON.parse(localStorage.getItem('ysr_sys_inc_log_2027') || '[]');
-else if (node === 'expensesLog') val = JSON.parse(localStorage.getItem('ysr_sys_exp_log_2027') || '[]');
-else if (node === 'customSchedules') val = JSON.parse(localStorage.getItem('ysr_sys_custom_sched_2027') || '[]');
-else if (node === 'paymentLog') val = JSON.parse(localStorage.getItem('ysr_sys_payment_log_2027') || '[]');
-else if (node === 'auditLog') val = JSON.parse(localStorage.getItem('ysr_sys_audit_2027') || '[]');
-else if (node === 'folders') val = JSON.parse(localStorage.getItem('ysr_sys_folders_2027') || '[]');
-else if (node === 'files') val = JSON.parse(localStorage.getItem('ysr_sys_files_2027') || '[]');
-else if (node === 'submissions') val = JSON.parse(localStorage.getItem('ysr_sys_submissions_2027') || '[]');
-set(dbRef, val);
+  if (['attRequests', 'payRequests', 'submissions'].includes(node)) {
+    const dbRef = ref(db, 'systemData/' + node);
+    let val;
+    if (node === 'attRequests') val = JSON.parse(localStorage.getItem('ysr_sys_att_2027') || '[]');
+    else if (node === 'payRequests') val = JSON.parse(localStorage.getItem('ysr_sys_pay_2027') || '[]');
+    else if (node === 'submissions') val = JSON.parse(localStorage.getItem('ysr_sys_submissions_2027') || '[]');
+    set(dbRef, val);
+  } else {
+    console.warn("Unprivileged upload node blocked on student portal:", node);
+  }
 });
-};
+};;
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -656,14 +632,11 @@ input:checked + .slider:before {
 
 <div class="wrapper">
 <div class="tabs-bar">
-<h3 style="margin:0; color:var(--accent); font-size:14px;">منصة مستر يسر الموافي (بكالوريا 2027)</h3>
+<h3 style="margin:0; color:var(--accent); font-size:14px;">🌟 بوابة الطالب - سنتر مستر يسر الموافي</h3>
 <div style="display: flex; gap: 6px; align-items: center;">
 <button class="theme-toggle-btn" onclick="toggleTheme(); playClickSound();" id="themeBtn">🌙 نايت مود</button>
-<button class="tab-item active" onclick="switchTab('studentTab'); playClickSound();">🌟 بوابة الطالب</button>
-<button class="tab-item" onclick="switchTab('adminTab'); playClickSound();">🔐 لوحة الإدارة</button>
 </div>
 </div>
-
 <!-- 1. بوابة الطالب -->
 <div id="studentTab" class="tab-pane active">
 <div class="live-datetime" id="studentDateTime">
@@ -764,295 +737,6 @@ input:checked + .slider:before {
 </div>
 
 <!-- 2. لوحة تحكم مستر يسر الموافي -->
-<div id="adminTab" class="tab-pane">
-<div class="live-datetime" id="adminDateTime">
-<div class="datetime-item">
-<span class="label">🕐 الوقت الآن</span>
-<span class="value" id="adminClock">--:--:--</span>
-</div>
-<div class="datetime-item">
-<span class="label">📅 اليوم</span>
-<span class="value" id="adminDay">---</span>
-</div>
-<div class="datetime-item">
-<span class="label">🗓️ التاريخ</span>
-<span class="value" id="adminDate">--/--/----</span>
-</div>
-</div>
-<div id="loginScreen">
-<div class="card-box" style="max-width: 320px; margin: 30px auto; text-align: center;">
-<h3>🔐 بوابة إدارة السنتر</h3>
-<input type="password" id="supPass" placeholder="كلمة المرور السرية">
-<button class="btn-custom" onclick="loginAdmin(); playClickSound();">دخول اللوحة</button>
-</div>
-</div>
-
-<div id="dashboardScreen" style="display: none;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
-<h2 style="margin:0; color: var(--accent); font-size: 16px;">لوحة تحكم مستر يسر الموافي الشاملة</h2>
-<div>
-<button class="btn-custom" onclick="exportToExcel(); playClickSound();" style="background: #16a34a; width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">📊 تصدير Excel شامل</button>
-<button class="btn-custom" onclick="resetSystemData(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px; margin-left: 2px;">⚙️ تصفير البيانات</button>
-<button class="btn-custom" onclick="logoutAdmin(); playClickSound();" style="background: var(--danger); width: auto; padding: 5px 10px; font-size: 11px;">خروج</button>
-</div>
-</div>
-
-<!-- أزرار الطباعة الأربعة المحدثة -->
-<div class="card-box" style="background: var(--bg-table); border: 2px solid var(--accent); padding: 10px;">
-<h3 style="margin-top:0; border:none; margin-bottom:6px; font-size:13px;">🖨️ مركز التقارير والطباعة السريعة</h3>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
-<button class="btn-custom" onclick="printStudentsReport(); playClickSound();" style="background: #2563eb; font-size: 12px; padding: 8px;">👥 طباعة أسامي الطلاب</button>
-<button class="btn-custom" onclick="printIncomeReport(); playClickSound();" style="background: #16a34a; font-size: 12px; padding: 8px;">💵 طباعة تفاصيل الإيرادات</button>
-<button class="btn-custom" onclick="printExpensesReport(); playClickSound();" style="background: #dc2626; font-size: 12px; padding: 8px;">📉 طباعة تفاصيل المصروفات</button>
-<button class="btn-custom" onclick="printAttendanceReport(); playClickSound();" style="background: #7c3aed; font-size: 12px; padding: 8px;">✅ طباعة الحضور والغياب</button>
-<button class="btn-custom" onclick="renderFirstOfMonthAlerts(true); playClickSound();" style="background: #eab308; font-size: 12px; padding: 8px; color: #111; font-weight: bold;">📅 كشف مطالبة أول الشهر</button>
-</div>
-</div>
-
-<!-- بطاقات الإحصائيات الشاملة -->
-<div class="stats-grid">
-<div class="stat-card"><h4>الإيرادات</h4><span id="totInc">0</span> ج.م</div>
-<div class="stat-card"><h4>المصاريف العامة</h4><span id="totExp">0</span> ج.م</div>
-<div class="stat-card"><h4>صافي الربح</h4><span id="netProf" style="color: var(--success);">0</span> ج.م</div>
-<div class="stat-card"><h4>إجمالي الطلاب</h4><span id="totStudents" style="color: #3b82f6;">0</span> طالب</div>
-<div class="stat-card"><h4>سجل الحضور</h4><span id="totAttendance" style="color: #a855f7;">0</span> سجل</div>
-</div>
-
-<!-- تنبيهات الاشتراكات المتأخرة -->
-<div id="subscriptionAlertBox" class="card-box" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.1); display: none; margin-bottom: 12px;">
-<h3 style="color: var(--danger); border-bottom: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 8px;">⚠️ تنبيهات الاشتراكات المتأخرة (مستحقة منذ يوم 1 من الشهر)</h3>
-<div style="max-height: 180px; overflow-y: auto;">
-  <table style="width: 100%; border-collapse: collapse;">
-    <thead>
-      <tr style="background: rgba(239, 68, 68, 0.2); color: var(--text-main);">
-        <th>اسم الطالب</th>
-        <th>الاشتراك الشهري</th>
-        <th>رقم الهاتف</th>
-        <th>المطالبة والإجراء</th>
-      </tr>
-    </thead>
-    <tbody id="unpaidSubscriptionsList"></tbody>
-  </table>
-</div>
-</div>
-
-<!-- كشف المطالبة المالي الشامل (تنبيه أول الشهر) -->
-<div id="firstOfMonthAlertBox" class="card-box" style="border: 2px solid #eab308; background: rgba(234, 179, 8, 0.1); display: none; margin-bottom: 12px;">
-  <h3 style="color: #eab308; border-bottom: 1px solid rgba(234, 179, 8, 0.2); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px;">
-    <span>📅 كشف المطالبة المالي الشهري (اليوم 1 من الشهر)</span>
-    <span style="font-size: 11px; background: #eab308; color: #111; padding: 2px 6px; border-radius: 4px; font-weight: bold;">متأخرات ومستحقات</span>
-  </h3>
-  <p style="font-size: 11px; color: var(--text-muted); margin-top: 0; margin-bottom: 8px;">الطلاب المدرجين أدناه لديهم مديونيات متأخرة أو اشتراكات مستحقة مع بداية هذا الشهر الجديد:</p>
-  <div style="overflow-x: auto; max-height: 250px;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <thead>
-        <tr style="background: rgba(234, 179, 8, 0.15); color: var(--text-main);">
-          <th>الطالب</th>
-          <th>النوع والمبلغ</th>
-          <th>الهاتف</th>
-          <th>الإجراء السريع</th>
-        </tr>
-      </thead>
-      <tbody id="firstOfMonthList"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- محرك البحث الذكي عن أي طالب -->
-<div class="card-box" style="border: 2px solid var(--accent); background: var(--bg-table);">
-<h3 style="border: none; margin-bottom: 4px;">🔍 البحث المتقدم وملف الطالب الشامل</h3>
-<p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">اختر اسم الطالب من القائمة لعرض كافة تفاصيله وحسابه وسجل حضوره وغيابه مع زر الطباعة:</p>
-<div style="display: flex; gap: 8px; flex-wrap: wrap;">
-<select id="searchStudentSelect" style="flex: 1; margin: 0;">
-<option value="">اختر اسم الطالب للبحث...</option>
-</select>
-<button class="btn-custom" onclick="searchStudentProfile(); playClickSound();" style="width: auto; padding: 8px 16px;">عرض الملف الشامل</button>
-</div>
-<div id="studentProfileResult" style="display: none; margin-top: 10px; padding: 10px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; line-height: 1.6;"></div>
-</div>
-
-<!-- جهاز سكان كروت الحضور الفوري في السنتر -->
-<div class="card-box" style="border: 2px dashed var(--accent); text-align: center; background: var(--bg-table);">
-<h3 style="border: none; margin-bottom: 4px;">📷 جهاز سكان كروت الحضور الفوري في السنتر</h3>
-<p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">مرر كارت كل طالب قدام الكاميرا لتسجيل حضوره مباشرة واعتماده في السيستم</p>
-<button class="btn-custom" onclick="toggleAdminScanner(); playClickSound();" style="background: #7c3aed; max-width: 280px; margin: auto;">📸 تشغيل كاميرا سكان كروت الحصة</button>
-<div id="adminReaderContainer" style="display:none; margin-top:10px;">
-<div id="adminReader" style="width:100%; max-width:240px; margin:auto;"></div>
-</div>
-<div id="adminScanAlert" class="alert-custom" style="max-width: 400px; margin: 8px auto 0 auto;"></div>
-</div>
-
-<div class="grid-2cols">
-<!-- قسم تحميل المصاريف على طالب معين -->
-<div class="card-box" style="border: 2px solid var(--accent);">
-<h3>💰 تحميل مصروف على طالب وإرسال واتساب</h3>
-<select id="chargeStudentSelect">
-<option value="">اختر الطالب...</option>
-</select>
-<select id="chargeReasonSelect">
-<option value="ثمن مذكرة الشرح">ثمن مذكرة الشرح</option>
-<option value="رسوم الامتحانات الشهرية">رسوم الامتحانات الشهرية</option>
-<option value="اشتراك حصة إضافية / مراجعة">اشتراك حصة إضافية / مراجعة</option>
-<option value="غرامة تأخير / غياب بدون عذر">غرامة تأخير / غياب بدون عذر</option>
-<option value="مصاريف سنتر إضافية">مصاريف سنتر إضافية</option>
-</select>
-<input type="number" id="chargeAmount" placeholder="المبلغ المطلوب (بالجنيه)">
-<button class="btn-custom" onclick="chargeStudentFee(); playClickSound();" style="background: #2563eb;">إضافة المصروف للطالب وإرسال الواتساب</button>
-</div>
-
-<div class="card-box">
-<h3>إضافة مصروفات السنتر العامة</h3>
-<select id="expTypeSelect">
-<option value="إيجار السنتر">إيجار السنتر</option>
-<option value="أدوات ومطبوعات">أدوات ومطبوعات</option>
-<option value="ضيافة وخدمات">ضيافة وخدمات</option>
-<option value="صيانة وأجهزة">صيانة وأجهزة</option>
-<option value="أخرى">مصروفات أخرى</option>
-</select>
-<input type="number" id="expValManual" placeholder="قيمة المصروف (بالجنيه)">
-<button class="btn-custom" onclick="addExpense(); playClickSound();" style="background: var(--danger);">حفظ المصروف العام</button>
-</div>
-</div>
-
-<!-- قسم تسجيل دفعة نقدية كاش مباشرة -->
-<div class="card-box" style="border: 2px solid var(--success); margin-top: 10px;">
-<h3>💵 تسجيل دفعة نقدية (كاش) وتخفيض الديون فوراً</h3>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-<div>
-<label style="font-size:11px; color:var(--text-muted);">الطالب:</label>
-<select id="payStudentSelect" style="margin: 4px 0 10px 0;">
-<option value="">اختر الطالب...</option>
-</select>
-</div>
-<div>
-<label style="font-size:11px; color:var(--text-muted);">المبلغ المدفوع (بالجنيه):</label>
-<input type="number" id="payAmountDirect" placeholder="المبلغ المدفوع (مثلاً: 50)" style="margin: 4px 0 10px 0;">
-</div>
-</div>
-<div>
-<label style="font-size:11px; color:var(--text-muted);">تفاصيل الدفع:</label>
-<input type="text" id="payDetailsDirect" placeholder="تفاصيل الدفع (مثلاً: شهر يناير كاش)" style="margin: 4px 0 10px 0;">
-</div>
-<button class="btn-custom" onclick="recordDirectPayment(); playClickSound();" style="background: var(--success); max-width: 280px;">تسجيل الدفع وتخفيض ديون الطالب فوراً</button>
-</div>
-
-<!-- قسم ضبط المجموعات والمواعيد الذكية -->
-<div class="card-box" style="border: 2px solid var(--success);">
-<h3>📅 نظام المجموعات والمواعيد (تحديد المادة، اسم المجموعة، اليوم والساعة)</h3>
-<div class="grid-2cols" style="margin-bottom:6px;">
-<div>
-<label style="font-size:11px; color:var(--text-muted);">المادة:</label>
-<select id="manualSubjSelect">
-<option value="محاسبة مالية">محاسبة مالية</option>
-<option value="إدارة أعمال">إدارة أعمال</option>
-<option value="محاسبة مالية وإدارة أعمال">المادتين معاً</option>
-</select>
-</div>
-<div>
-<label style="font-size:11px; color:var(--text-muted);">اسم المجموعة:</label>
-<input type="text" id="manualGroupName" placeholder="مثلاً: مجموعة A أو مجموعة البكالوريا">
-</div>
-</div>
-<div>
-<label style="font-size:11px; color:var(--text-muted);">اليوم والساعة (مثلاً: السبت - 04:00 عصراً):</label>
-<input type="text" id="manualTime" placeholder="مثلاً: السبت - 04:00 عصراً">
-</div>
-<button class="btn-custom" onclick="addCustomSchedule(); playClickSound();" style="background: var(--success); max-width: 250px;">+ إضافة هذه المجموعة والموعد</button>
-
-<div style="margin-top: 10px;">
-<h4 style="margin:5px 0; font-size:12px; color:var(--accent);">المجموعات والمواعيد الحالية المسجلة:</h4>
-<div id="adminScheduleList" style="max-height: 120px; overflow-y: auto; background:var(--bg-table); padding:6px; border-radius:6px; font-size:12px;"></div>
-</div>
-</div>
-
-<div class="grid-2cols">
-<div class="card-box">
-<h3 id="studentFormTitle">➕ إضافة طالب جديد</h3>
-<div id="editIdWrapper" style="display: none; margin-bottom: 8px;">
-  <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">تعديل كود الطالب (اختياري):</label>
-  <input type="text" id="editStudentId" placeholder="كود الطالب">
-</div>
-<input type="text" id="newSName" placeholder="اسم الطالب بالكامل">
-<input type="text" id="newSPhone" placeholder="رقم الهاتف (واتساب)">
-<select id="newSSubject">
-<option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)</option>
-<option value="محاسبة مالية">محاسبة مالية فقط</option>
-<option value="إدارة أعمال">إدارة أعمال فقط</option>
-</select>
-<label style="font-size:11px; color:var(--text-muted);">اختر مجموعة الطالب وموعده:</label>
-<select id="newSGroupSelect">
-<option value="عامة">مجموعة عامة</option>
-</select>
-<input type="number" id="newSDueManual" placeholder="الديون أو المصاريف المتأخرة (أو 0)">
-<label style="font-size:11px; color:var(--text-muted); font-weight: bold;">ثمن الاشتراك الشهري المحدد (ج.م) (أو 0):</label>
-<input type="number" id="newSMonthlyFee" placeholder="ثمن الاشتراك الشهري المحدد (ج.م) (مثلاً: 300)">
-<label style="font-size:11px; color:var(--text-muted); font-weight: bold;">تاريخ انتهاء صلاحية الاشتراك (صلاحية الكارت):</label>
-<input type="date" id="newSExpiryDate">
-<button class="btn-custom" id="studentSubmitBtn" onclick="saveOrUpdateStudent(); playClickSound();">حفظ وتوليد الكود</button>
-<div style="text-align: center; margin-top: 8px;"><div id="newStudentQr" style="display: inline-block; background: white; padding: 4px; border-radius: 6px;"></div></div>
-</div>
-
-<div>
-<div class="card-box" style="margin-bottom: 10px;">
-<h3>⏳ طلبات الحضور المعلقة (تسجيل حضور / تسجيل غياب)</h3>
-<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
-  <input id="attRequestsDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
-  <button class="btn-custom" onclick="document.getElementById('attRequestsDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
-</div>
-<div style="max-height: 110px; overflow-y: auto;">
-<table><thead><tr><th>الاسم</th><th>الوقت</th><th>الإجراء الفوري</th></tr></thead><tbody id="attTable"></tbody></table>
-</div>
-</div>
-
-<div class="card-box">
-<h3>📚 سجل الحضور المعتمد (محفوظ دائماً)</h3>
-<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
-<input id="attendanceHistoryDateFilter" type="date" onchange="renderAttendanceHistory()" style="max-width:180px;">
-<button class="btn-custom" onclick="clearAttendanceHistoryFilter()">عرض الكل</button>
-</div>
-<div style="max-height: 150px; overflow-y: auto;">
-<table><thead><tr><th>الاسم</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody id="attendanceHistoryTable"></tbody></table>
-</div>
-</div>
-
-<div class="card-box" style="margin-top:12px;">
-<h3>🛡️ سجل معاملات الإدارة (بند موحد غير مكرر)</h3>
-<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
-  <input id="auditLogDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
-  <button class="btn-custom" onclick="document.getElementById('auditLogDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
-</div>
-<div style="max-height:180px;overflow:auto;">
-<table><thead><tr><th>العملية</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
-<tbody id="auditLogTable"></tbody></table>
-</div>
-</div>
-
-<div class="card-box">
-<h3>💳 مدفوعات قيد المراجعة (تم الدفع / لم يدفع)</h3>
-<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items: center;">
-  <input id="payRequestsDateFilter" type="date" onchange="updateAdminDashboard()" style="max-width:180px; margin:0;">
-  <button class="btn-custom" onclick="document.getElementById('payRequestsDateFilter').value=''; updateAdminDashboard();" style="width: auto; padding: 6px 12px; margin:0;">عرض الكل</button>
-</div>
-<div style="max-height: 110px; overflow-y: auto;">
-<table><thead><tr><th>الاسم</th><th>المبلغ</th><th>الإجراء</th></tr></thead><tbody id="payTable"></tbody></table>
-</div>
-</div>
-</div>
-</div>
-
-<div class="card-box">
-<h3>📋 سجل الطلاب والتحكم الكامل (تعديل وحذف أي شيء)</h3>
-<div style="overflow-x: auto;">
-<table>
-<thead><tr><th>الكود</th><th>الاسم</th><th>المجموعة والموعد والمادة</th><th>الهاتف</th><th>الديون وحالة الحضور</th><th>QR</th><th>واتساب</th><th>التحكم</th></tr></thead>
-<tbody id="studentsListTable"></tbody>
-</table>
-</div>
-</div>
-</div>
-</div>
-</div>
-
 <div id="receiptModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
 <div style="background:var(--bg-card); backdrop-filter:blur(12px); border:2px solid var(--accent); padding:20px; border-radius:10px; text-align:center; color:var(--text-main); max-width:350px; width:90%;">
 <h3 style="color:var(--accent); margin-top:0;">📜 تم إرسال الطلب بنجاح</h3>
@@ -1062,17 +746,7 @@ input:checked + .slider:before {
 </div>
 </div>
 
-<div id="printModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-<div style="background:white; padding:20px; border-radius:10px; text-align:center; color:black; max-width:300px;">
-<h3 id="printStudentName" style="margin-top:0; color:#111;">كود الطالب</h3>
-<div id="singleQrCodeContainer" style="display:inline-block; padding:6px; background:#fff; border:1px solid #ccc; margin:8px 0;"></div>
-<p id="printStudentIdCode" style="font-weight:bold; font-size:14px; color:#333;"></p>
-<div style="display:flex; gap:6px; margin-top:10px;">
-<button onclick="window.print()" style="background:#2563eb; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">طباعة</button>
-<button onclick="closePrintModal(); playClickSound();" style="background:#dc2626; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; flex:1; font-weight:bold;">إغلاق</button>
-</div>
-</div>
-</div>
+
 
 <script>
 const YSR_SYSTEM_VERSION = '2027.2-PRO';
@@ -1274,370 +948,24 @@ updateAdminDashboard();
 alert(`❌ تم تسجيل غياب يدوي للطالب ${student.name} (+1 يوم غياب) وتحديث التقارير!`);
 }
 
-function recordDirectPayment() {
-let selectEl = document.getElementById('payStudentSelect');
-let studentId = selectEl.value;
-let amount = parseFloat(document.getElementById('payAmountDirect').value);
-let details = document.getElementById('payDetailsDirect').value.trim() || 'دفع كاش مباشرة للإدارة';
+// Removed admin function: recordDirectPayment
 
-if (!studentId) { alert("اختر الطالب أولاً"); return; }
-if (isNaN(amount) || amount <= 0) { alert("أدخل مبلغ صحيح"); return; }
-
-let student = students.find(s => s.id === studentId);
-if (!student) return;
-
-student.due = Math.max(0, student.due - amount);
-income += amount;
-
-incomeLog.push({ 
-name: student.name, 
-subject: 'دفع كاش مباشر', 
-details: details, 
-amount: amount 
-});
-
-paymentLog = paymentLog || [];
-paymentLog.push({ 
-studentId: student.id, 
-name: student.name, 
-amount: amount, 
-type: 'تم الدفع', 
-paidAt: new Date().toLocaleString('ar-EG') 
-});
-
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-localStorage.setItem('ysr_sys_inc_2027', income);
-localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
-localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-
-addAudit('تسجيل مدفوعات', `تم تسجيل دفع نقدي مباشر للطالب ${student.name} بمبلغ ${amount} ج.م`);
-commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
-updateAdminDashboard();
-
-document.getElementById('payAmountDirect').value = '';
-document.getElementById('payDetailsDirect').value = '';
-selectEl.value = '';
-alert(`✅ تم تسجيل الدفعة النقدية للطالب ${student.name} بقيمة ${amount} ج.م وتحديث حسابه والتقارير فوراً!`);
-}
 
 function getTodayEgyptDateKey() {
 return new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
 }
 
-function printStudentsReport() {
-let win = window.open('', '_blank');
-let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير أسامي وبيانات الطلاب</title>
-<style>body{font-family:'Cairo',Arial;padding:20px;}h2{color:#1d4ed8;text-align:center;}table{width:100%;border-collapse:collapse;margin-top:15px;}th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}th{background:#f1f5f9;}</style>
-</head><body>
-<h2>منصة مستر يسر الموافي - تقرير أسامي وبيانات الطلاب (2027)</h2>
-<hr>
-<table>
-<thead><tr><th>الكود</th><th>اسم الطالب</th><th>المادة والمجموعة والموعد</th><th>الهاتف</th><th>حضور / غياب</th><th>الموقف المالي</th></tr></thead>
-<tbody>`;
-students.forEach(s => {
-let attCount = attendanceLog.filter(a => a.studentId === s.id).length;
-let absCount = s.absentDays || 0;
-html += `<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</td><td>${s.phone || 'بدون'}</td><td>حضور: ${attCount} | غياب: ${absCount}</td><td style="color:${s.due > 0 ? 'red' : 'green'};">${s.due > 0 ? s.due + ' ج.م متأخرات' : 'خالص تماماً'}</td></tr>`;
-});
-html += `</tbody></table><script>window.print();<\/script>
-<!-- زر الإضافة العائم في لوحة التحكم (الآدمن) -->
-<div id="adminFloatingAddBtn" class="admin-floating-add-btn" onclick="openContentManagerModal(); playClickSound();" title="مركز إدارة الملفات والكتب والواجبات">+</div>
+// Removed admin function: printStudentsReport
 
-<!-- مودال مركز إدارة الملفات والكتب والواجبات (للآدمن) -->
-<div id="contentManagerModal" class="custom-modal-overlay">
-  <div class="custom-modal-container">
-    <div class="custom-modal-header">
-      <h3>📂 مركز إدارة المحتوى والواجبات والكتب الذكي (مستر يسر الموافي)</h3>
-      <button class="custom-modal-close" onclick="closeContentManagerModal(); playClickSound();">إغلاق ✗</button>
-    </div>
-    
-    <div class="modal-tabs">
-      <button id="tabBtnCreateFolder" class="modal-tab-btn active" onclick="switchModalTab('createFolder')">📁 إنشاء مجلد جديد</button>
-      <button id="tabBtnUploadFile" class="modal-tab-btn" onclick="switchModalTab('uploadFile')">📄 رفع ملف وصلاحياته</button>
-      <button id="tabBtnSubmissions" class="modal-tab-btn" onclick="switchModalTab('submissions')">🏆 كشف تسليمات الواجبات</button>
-    </div>
 
-    <!-- Tab 1: Create Folder -->
-    <div id="modalTabCreateFolder" class="modal-tab-content" style="display: block;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>📁 إنشاء مجلد أو مادة جديدة لمكتبة السنتر</h3>
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اسم المجلد / الكتاب (مثال: كتاب المحاسبة المالية، مراجعة شهر يناير):</label>
-        <input type="text" id="newFolderNameInput" placeholder="أدخل اسم المجلد...">
-        
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">المادة الموجه لها هذا المجلد:</label>
-        <select id="folderSubjectInput">
-          <option value="محاسبة مالية وإدارة أعمال">محاسبة مالية وإدارة أعمال (المادتين)</option>
-          <option value="محاسبة مالية">محاسبة مالية فقط</option>
-          <option value="إدارة أعمال">إدارة أعمال فقط</option>
-        </select>
-        
-        <button class="btn-custom" onclick="createContentFolder(); playClickSound();" style="background: var(--success);">+ إنشاء المجلد ونشره فوراً</button>
-      </div>
-      
-      <div class="card-box">
-        <h3>📂 المجلدات الحالية المسجلة</h3>
-        <div id="adminFoldersList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
-          <!-- سيتم سرد المجلدات هنا -->
-        </div>
-      </div>
-    </div>
+// Removed admin function: printIncomeReport
 
-    <!-- Tab 2: Upload File & Permissions -->
-    <div id="modalTabUploadFile" class="modal-tab-content" style="display: none;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>📄 رفع مذكرات أو امتحانات مباشرة من كمبيوترك</h3>
-        
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر المجلد المستهدف لرفع الملف بداخله:</label>
-        <select id="fileFolderSelect">
-          <option value="">-- اختر المجلد --</option>
-        </select>
 
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">عنوان الملف أو المذكرة (مثال: مذكرة شرح المحاسبة، أسئلة الواجب):</label>
-        <input type="text" id="newFileNameInput" placeholder="أدخل عنوان الملف للتلميذ...">
+// Removed admin function: printExpensesReport
 
-        <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">اختر الملف من جهازك (PDF أو صور):</label>
-        <input type="file" id="newFileField" accept="application/pdf, image/*" style="margin-bottom: 12px;">
 
-        <!-- شريط التقدم للرفع -->
-        <div id="uploadProgressContainer" style="display: none; margin-bottom: 15px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-            <span style="color: var(--accent); font-weight: bold;">⏳ جارِ رفع الملف السحابي...</span>
-            <span id="uploadProgressPercent" style="font-weight: bold;">0%</span>
-          </div>
-          <progress id="uploadProgressBar" value="0" max="100"></progress>
-        </div>
+// Removed admin function: printAttendanceReport
 
-        <!-- إعدادات الصلاحيات للتحكم بالتنزيل -->
-        <div class="toggle-switch-container">
-          <span class="toggle-switch-label">📥 السماح للطالب بتحميل وتنزيل الملف على جهازه:</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="fileDownloadPermInput" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <!-- إعدادات الواجب التفاعلي -->
-        <div class="toggle-switch-container" style="border-color: #f59e0b;">
-          <span class="toggle-switch-label" style="color: #f59e0b;">📝 هل هذا الملف يمثل واجب أو امتحان تفاعلي؟</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="fileIsHomeworkInput" onchange="toggleHomeworkBuilderArea()">
-            <span class="slider" style="background-color: #4b5563;"></span>
-          </label>
-        </div>
-
-        <!-- بناء أسئلة الواجب التفاعلي -->
-        <div id="homeworkBuilderArea" style="display: none; border: 1px solid #f59e0b; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.03); margin-bottom: 12px;">
-          <h4 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 13px;">📝 مصمم أسئلة الواجب التفاعلي (مؤقت ساعة)</h4>
-          
-          <label style="font-size:11px; color:var(--text-muted); font-weight: bold;">مدة الامتحان بالدقائق (افتراضي 60 دقيقة):</label>
-          <input type="number" id="homeworkDurationInput" value="60" style="max-width: 120px;">
-
-          <div id="homeworkQuestionsContainer">
-            <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
-          </div>
-          
-          <button class="btn-custom" onclick="addNewHomeworkQuestionRow(); playClickSound();" style="background: #f59e0b; color: #111; max-width: 200px; font-size: 11px; padding: 6px;">+ إضافة سؤال اختيار من متعدد</button>
-        </div>
-
-        <button id="uploadContentBtn" class="btn-custom" onclick="uploadAndPublishFile(); playClickSound();" style="background: var(--accent);">🚀 رفع الملف ونشره للطلاب</button>
-      </div>
-      
-      <div class="card-box">
-        <h3>📄 المذكرات والملفات المنشورة في المجلدات</h3>
-        <div id="adminFilesList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
-          <!-- سيتم سرد الملفات المرفوعة هنا -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab 3: Homework Submissions -->
-    <div id="modalTabSubmissions" class="modal-tab-content" style="display: none;">
-      <div class="card-box" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border);">
-        <h3>🏆 كشف تسليمات الواجبات والامتحانات التفاعلية</h3>
-        <p style="color: var(--text-muted); font-size: 11px; margin-top: 0;">راقب كشف تصحيح الواجبات للطلاب تلقائياً ومستواهم مادة بمادة:</p>
-        
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-          <input type="text" id="submissionsSearchInput" placeholder="البحث باسم الطالب أو الواجب..." oninput="renderAdminSubmissionsTable()" style="flex: 1; margin:0;">
-          <button class="btn-custom" onclick="clearSubmissionsSearch(); playClickSound();" style="width: auto; padding: 8px 15px; margin:0;">عرض الكل</button>
-        </div>
-
-        <div style="overflow-x: auto; max-height: 350px;">
-          <table>
-            <thead>
-              <tr>
-                <th>اسم الطالب (الكود)</th>
-                <th>اسم الواجب</th>
-                <th>الدرجة النهائية</th>
-                <th>الوقت المستغرق</th>
-                <th>تاريخ التسليم</th>
-                <th>التحكم</th>
-              </tr>
-            </thead>
-            <tbody id="adminSubmissionsTableBody">
-              <!-- سيتم تعبئة درجات الطلاب هنا -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- مودال قارئ الملفات الآمن والشفاف للمتصفح (عرض مؤمن لمنع التحميل) -->
-<div id="secureFileViewerModal" class="custom-modal-overlay">
-  <div class="custom-modal-container" style="max-width: 900px; padding: 15px;">
-    <div class="custom-modal-header" style="margin-bottom: 10px;">
-      <h3 id="secureViewerTitle">👁️ قارئ المذكرات والكتب المحمي</h3>
-      <button class="custom-modal-close" onclick="closeSecureFileViewer(); playClickSound();">إغلاق القارئ ✗</button>
-    </div>
-    <div style="position: relative; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-      <!-- طبقة حماية شفافة لمنع سحب الملف أو الضغط كليك يمين لتأمين الكتاب -->
-      <div id="viewerOverlayProtection" class="exam-protection-overlay" style="display: block;"></div>
-      <iframe id="secureViewerIframe" class="secure-viewer-iframe" src=""></iframe>
-    </div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; color: var(--text-muted);">
-      <span>🔒 هذا الملف معروض تحت نظام الحماية الذكي لمكتبة مستر يسر الموافي</span>
-      <span id="secureViewerDownloadLinkArea"></span>
-    </div>
-  </div>
-</div>
-
-<!-- لوحة الامتحان والواجب التفاعلي بملء الشاشة للطالب -->
-<div id="interactiveExamPanel" class="exam-fullscreen-container">
-  <div class="exam-header">
-    <div style="display: flex; flex-direction: column;">
-      <h3 id="examHomeworkTitle" style="margin: 0; color: var(--accent); font-size: 16px;">اسم الامتحان التفاعلي</h3>
-      <small style="color: var(--text-muted);" id="examStudentName">الطالب: ---</small>
-    </div>
-    <div style="display: flex; gap: 15px; align-items: center;">
-      <div id="examCountdownTimer" class="exam-timer">60:00</div>
-      <button class="custom-modal-close" onclick="triggerHomeworkForcedExit();" style="padding: 6px 15px;">تسجيل الخروج والانسحاب ✗</button>
-    </div>
-  </div>
-  
-  <div class="exam-body-grid">
-    <!-- الباب الأيمن: ورقة شرح أو أسئلة الواجب المعروضة كـ PDF محمي -->
-    <div class="exam-pdf-pane">
-      <div class="exam-protection-overlay"></div>
-      <iframe id="examPdfIframe" style="width: 100%; height: 100%; border: none;" src=""></iframe>
-    </div>
-    
-    <!-- الباب الأيسر: الاستبيان والأسئلة الاختيارية للحل التفاعلي والتصحيح -->
-    <div class="exam-questions-pane">
-      <h4 style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; color: #3b82f6;">📋 ورقة الإجابة والتصحيح الإلكتروني الفوري:</h4>
-      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px;">اقرأ السؤال في المذكرة على اليمين، ثم اختر إجابتك المناسبة في ورقة الاستبيان بالأسفل لتصحيحها فوراً:</p>
-      
-      <form id="homeworkQuestionsForm" onsubmit="event.preventDefault(); submitHomeworkExam();">
-        <div id="examQuestionsRenderArea">
-          <!-- سيتم بناء الأسئلة ديناميكياً هنا -->
-        </div>
-        
-        <button type="submit" class="btn-custom" style="background: var(--success); margin-top: 20px; font-size: 15px; padding: 12px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">🚀 إنهاء وحفظ الإجابات وتسجيل الدرجة</button>
-      </form>
-    </div>
-  </div>
-</div>
-</body></html>`;
-win.document.write(html);
-win.document.close();
-}
-
-function printIncomeReport() {
-let win = window.open('', '_blank');
-let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير تفصيلي الإيرادات</title>
-<style>
-body{font-family:'Cairo',Arial;padding:20px;}
-h2{color:#16a34a;text-align:center;}
-.total-box{border:2px solid #16a34a;padding:12px;border-radius:6px;max-width:350px;margin:15px auto;text-align:center;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}
-th{background:#f0fdf4;color:#16a34a;}
-</style>
-</head><body>
-<h2>منصة مستر يسر الموافي - تقرير تفصيلي الإيرادات</h2>
-<hr>
-<div class="total-box">
-<p style="margin:0; font-weight:bold;">إجمالي الإيرادات المحصلة:</p>
-<h2 style="color:#16a34a; margin:5px 0;">${income} ج.م</h2>
-</div>
-<table>
-<thead><tr><th>م</th><th>اسم الطالب / المصدر</th><th>البند / المادة</th><th>التفاصيل</th><th>المبلغ</th></tr></thead>
-<tbody>`;
-
-if(incomeLog.length === 0) {
-html += `<tr><td colspan="5">لا توجد حركات إيرادات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${income} ج.م</td></tr>`;
-} else {
-incomeLog.forEach((item, idx) => {
-html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.subject || 'اشتراك'}</td><td>${item.details || '-'}</td><td style="color:#16a34a; font-weight:bold;">+${item.amount} ج.م</td></tr>`;
-});
-}
-html += `</tbody></table><script>window.print();<\/script></body></html>`;
-win.document.write(html);
-win.document.close();
-}
-
-function printExpensesReport() {
-let win = window.open('', '_blank');
-let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير تفصيلي المصروفات</title>
-<style>
-body{font-family:'Cairo',Arial;padding:20px;}
-h2{color:#dc2626;text-align:center;}
-.total-box{border:2px solid #dc2626;padding:12px;border-radius:6px;max-width:350px;margin:15px auto;text-align:center;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}
-th{background:#fef2f2;color:#dc2626;}
-</style>
-</head><body>
-<h2>منصة مستر يسر الموافي - تقرير تفصيلي المصروفات</h2>
-<hr>
-<div class="total-box">
-<p style="margin:0; font-weight:bold;">إجمالي المصروفات المسجلة:</p>
-<h2 style="color:#dc2626; margin:5px 0;">${expenses} ج.م</h2>
-</div>
-<table>
-<thead><tr><th>م</th><th>نوع وبند المصروف</th><th>المبلغ المدفوع</th></tr></thead>
-<tbody>`;
-
-if(expensesLog.length === 0) {
-html += `<tr><td colspan="3">لا توجد بنود مصروفات تفصيلية مسجلة بعد، الإجمالي العام الحالي: ${expenses} ج.م</td></tr>`;
-} else {
-expensesLog.forEach((item, idx) => {
-html += `<tr><td>${idx+1}</td><td><b>${item.type}</b></td><td style="color:#dc2626; font-weight:bold;">-${item.amount} ج.م</td></tr>`;
-});
-}
-html += `</tbody></table><script>window.print();<\/script></body></html>`;
-win.document.write(html);
-win.document.close();
-}
-
-function printAttendanceReport() {
-let win = window.open('', '_blank');
-let html = `<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير تفصيلي الحضور والغياب</title>
-<style>
-body{font-family:'Cairo',Arial;padding:20px;}
-h2{color:#7c3aed;text-align:center;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #333;padding:8px;text-align:center;font-size:13px;}
-th{background:#f5f3ff;color:#7c3aed;}
-</style>
-</head><body>
-<h2>منصة مستر يسر الموافي - تقرير تفصيلي الحضور والغياب للطلاب</h2>
-<hr>
-<h3>سجل الطلاب الحاضرين:</h3>
-<table>
-<thead><tr><th>م</th><th>اسم الطالب</th><th>تاريخ الحضور</th><th>وقت الحضور</th><th>الحالة</th></tr></thead>
-<tbody>`;
-if(attendanceLog.length === 0) {
-html += `<tr><td colspan="5">لا توجد سجلات حضور معتمدة حالياً</td></tr>`;
-} else {
-attendanceLog.forEach((item, idx) => {
-html += `<tr><td>${idx+1}</td><td><b>${item.name}</b></td><td>${item.date || '-'}</td><td>${item.time}</td><td style="color:green;">حاضر ✓</td></tr>`;
-});
-}
-html += `</tbody></table><script>window.print();<\/script></body></html>`;
-win.document.write(html);
-win.document.close();
-}
 
 function renderStudentSchedule() {
 let viewEl = document.getElementById('studentScheduleView');
@@ -1674,40 +1002,14 @@ if(adminListEl) adminListEl.innerHTML = adminHtml;
 if(groupSelect) groupSelect.innerHTML = groupOptionsHtml;
 }
 
-function addCustomSchedule() {
-let subj = document.getElementById('manualSubjSelect').value;
-let groupName = document.getElementById('manualGroupName').value.trim() || 'مجموعة رئيسية';
-let time = document.getElementById('manualTime').value.trim();
-if (!time) { alert("أدخل اليوم والساعة بشكل صحيح"); return; }
-customSchedules.push({ subject: subj, group: groupName, time: time });
-localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
-commitChanges();
-document.getElementById('manualTime').value = '';
-document.getElementById('manualGroupName').value = '';
-renderStudentSchedule();
-alert("تم إضافة المجموعة والموعد بنجاح!");
-}
+// Removed admin function: addCustomSchedule
 
-function editSchedule(index) {
-let item = customSchedules[index];
-let newTime = prompt("تعديل اليوم والساعة:", item.time);
-if (newTime !== null && newTime.trim() !== "") {
-customSchedules[index].time = newTime.trim();
-localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
-commitChanges();
-renderStudentSchedule();
-alert("تم تحديث الموعد بنجاح!");
-}
-}
 
-function removeSchedule(index) {
-if (confirm("هل تريد حذف هذه المجموعة والموعد نهائياً؟")) {
-customSchedules.splice(index, 1);
-localStorage.setItem('ysr_sys_custom_sched_2027', JSON.stringify(customSchedules));
-commitChanges();
-renderStudentSchedule();
-}
-}
+// Removed admin function: editSchedule
+
+
+// Removed admin function: removeSchedule
+
 
 function switchTab(id) {
 document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -1716,31 +1018,11 @@ document.getElementById(id).classList.add('active');
 event.currentTarget.classList.add('active');
 }
 
-function loginAdmin() {
-if (document.getElementById('supPass').value === "23122002") {
-document.getElementById('loginScreen').style.display = 'none';
-document.getElementById('dashboardScreen').style.display = 'block';
-updateAdminDashboard();
-if (document.getElementById('adminFloatingAddBtn')) {
-  document.getElementById('adminFloatingAddBtn').style.display = 'flex';
-}
-} else {
-alert("كلمة المرور خطأ!");
-}
-}
+// Removed admin function: loginAdmin
 
-function logoutAdmin() {
-if (isAdminScannerOpen && adminHtml5QrCode) {
-adminHtml5QrCode.stop().catch(err => {});
-isAdminScannerOpen = false;
-}
-document.getElementById('supPass').value = '';
-document.getElementById('dashboardScreen').style.display = 'none';
-document.getElementById('loginScreen').style.display = 'block';
-if (document.getElementById('adminFloatingAddBtn')) {
-  document.getElementById('adminFloatingAddBtn').style.display = 'none';
-}
-}
+
+// Removed admin function: logoutAdmin
+
 
 function updateStudentPortalView(student) {
 let attCount = attendanceLog.filter(a => a.studentId === student.id).length;
@@ -1848,77 +1130,8 @@ isScannerOpen = false;
 }
 }
 
-function toggleAdminScanner() {
-let cont = document.getElementById('adminReaderContainer');
-let alertBox = document.getElementById('adminScanAlert');
-if (!isAdminScannerOpen) {
-cont.style.display = 'block';
-isAdminScannerOpen = true;
-adminHtml5QrCode = new Html5Qrcode("adminReader");
-adminHtml5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 200, height: 200 } }, (text) => {
-let cleanCode = text.trim();
-if (text.includes("code=")) {
-try {
-let urlObj = new URL(text);
-cleanCode = urlObj.searchParams.get("code") || urlObj.searchParams.get("id") || text;
-} catch(e) {}
-} else if (text.includes("id=")) {
-try {
-let urlObj = new URL(text);
-cleanCode = urlObj.searchParams.get("id") || text;
-} catch(e) {}
-}
-let student = students.find(s => s.id === cleanCode);
-alertBox.style.display = 'block';
-if (student) {
-let currentDateStr = new Date().toLocaleDateString('ar-EG');
+// Removed admin function: toggleAdminScanner
 
-let alreadyHasActiveRequest = attRequests.some(item => item.studentId === student.id && item.date === currentDateStr);
-let alreadyAttendedToday = attendanceLog.some(item => item.studentId === student.id && item.date === currentDateStr);
-
-if (alreadyHasActiveRequest || alreadyAttendedToday) {
-alertBox.style.background = 'rgba(120, 53, 15, 0.9)';
-alertBox.style.color = '#fde047';
-alertBox.innerHTML = `⚠️ تنبيه: الطالب <b>${student.name}</b> لديه طلب مسجل مسبقاً أو تم تسسجيل حضوره اليوم (${currentDateStr}) ولا يمكن التكرار!`;
-return;
-}
-
-attRequests.push({
-requestId: makeId('ATT'),
-studentId: student.id,
-name: student.name + ' (سكان السنتر الفوري)',
-date: currentDateStr,
-isoDate: getTodayEgyptDateKey(),
-time: new Date().toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo' }),
-status: 'pending'
-});
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
-commitChanges();
-updateAdminDashboard();
-
-alertBox.style.background = 'rgba(6, 78, 59, 0.9)';
-alertBox.style.color = '#4ade80';
-alertBox.innerHTML = `✅ تم إضافة طلب حضور الطالب: <b>${student.name}</b> بنجاح إلى الطلبات المعلقة ✓`;
-} else {
-alertBox.style.background = 'rgba(153, 27, 27, 0.9)';
-alertBox.style.color = '#f87171';
-alertBox.innerHTML = `❌ الكود "${cleanCode}" غير مسجل في قاعدة بيانات السنتر!`;
-}
-}, () => {});
-} else {
-if (adminHtml5QrCode) {
-adminHtml5QrCode.stop().then(() => {
-cont.style.display = 'none';
-isAdminScannerOpen = false;
-alertBox.style.display = 'none';
-}).catch(() => { cont.style.display = 'none'; isAdminScannerOpen = false; });
-} else {
-cont.style.display = 'none';
-isAdminScannerOpen = false;
-alertBox.style.display = 'none';
-}
-}
-}
 
 function makeId(prefix) {
 return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -2111,339 +1324,38 @@ resBox.innerHTML = `
 `;
 }
 
-function printStudentProfile(id) {
-let s = students.find(item => item.id === id);
-if (!s) return;
-let studentAtts = attendanceLog.filter(a => a.studentId === s.id);
-let absCount = s.absentDays || 0;
-let printWindow = window.open('', '_blank');
-printWindow.document.write(`
-<html dir="rtl"><head><meta charset="UTF-8"><title>ملف الطالب - ${s.name}</title>
-<style>body { font-family: 'Cairo', Arial; padding: 20px; } .card { border: 2px solid #333; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; } h2 { color: #1d4ed8; text-align: center; }</style>
-</head><body>
-<div class="card">
-<h2>منصة مستر يسر الموافي - ملف الطالب</h2><hr>
-<p><b>اسم الطالب:</b> ${s.name}</p><p><b>كود السنتر:</b> ${s.id}</p>
-<p><b>المجموعة والموعد والمادة:</b> ${s.subject || 'الكل'} (${s.group || 'عامة'}) - ${s.groupTime || 'غير محدد'}</p><p><b>رقم الهاتف:</b> ${s.phone || 'بدون'}</p>
-<p><b>الموقف المالي:</b> ${s.due > 0 ? s.due + ' ج.م (عليك متأخرات)' : 'خالص تماماً ✓'}</p>
-<p><b>أيام الحضور:</b> ${studentAtts.length} | <b>أيام الغياب:</b> ${absCount}</p>
-</div>
-<script>window.print();<\/script></body></html>
-`);
-printWindow.document.close();
-}
+// Removed admin function: printStudentProfile
 
-function saveOrUpdateStudent() {
-let editId = document.getElementById('editStudentId').value.trim();
-let name = document.getElementById('newSName').value.trim();
-let phone = document.getElementById('newSPhone').value.trim();
-let subject = document.getElementById('newSSubject').value;
-let groupFull = document.getElementById('newSGroupSelect').value; // تتضمن المجموعة والموعد مقسومين بـ |
-let due = parseFloat(document.getElementById('newSDueManual').value) || 0;
-let monthlyFee = parseFloat(document.getElementById('newSMonthlyFee').value) || 0;
-let expiryDate = document.getElementById('newSExpiryDate').value;
-if (!name) { alert("أدخل اسم الطالب"); return; }
 
-let groupName = "عامة";
-let groupTime = "غير محدد";
-if (groupFull.includes("|")) {
-let parts = groupFull.split("|");
-groupName = parts[0];
-groupTime = parts[1];
-}
+// Removed admin function: saveOrUpdateStudent
 
-if (window.currentEditingOldId) {
-let student = students.find(s => s.id === window.currentEditingOldId);
-if (student) {
-  if (editId !== window.currentEditingOldId) {
-    let exists = students.some(s => s.id === editId);
-    if (exists) {
-      alert("⚠️ هذا الكود مستخدم بالفعل لطالب آخر!");
-      return;
-    }
-    // Update any logs referring to this student's ID!
-    attendanceLog.forEach(a => { if (a.studentId === window.currentEditingOldId) a.studentId = editId; });
-    attRequests.forEach(r => { if (r.studentId === window.currentEditingOldId) r.studentId = editId; });
-    payRequests.forEach(p => { if (p.studentId === window.currentEditingOldId) p.studentId = editId; });
-    if (window.paymentLog) window.paymentLog.forEach(p => { if (p.studentId === window.currentEditingOldId) p.studentId = editId; });
-  }
-student.id = editId;
-student.name = name;
-student.phone = phone;
-student.subject = subject;
-student.group = groupName;
-student.groupTime = groupTime;
-student.due = due;
-student.monthlyFee = monthlyFee;
-student.expiryDate = expiryDate;
-}
-window.currentEditingOldId = null;
-document.getElementById('editIdWrapper').style.display = 'none';
-document.getElementById('editStudentId').value = '';
-document.getElementById('studentFormTitle').innerText = '➕ إضافة طالب جديد';
-document.getElementById('studentSubmitBtn').innerText = 'حفظ وتوليد الكود';
-alert("تم تحديث بيانات الطالب وموعد مجموعته فورا بنجاح!");
-} else {
-let id = editId || ('STU_' + Math.floor(100000 + Math.random() * 900000));
-let exists = students.some(s => s.id === id);
-if (exists) {
-  alert("⚠️ كود الطالب هذا مسجل بالفعل لطالب آخر!");
-  return;
-}
-students.push({ id: id, name: name, phone: phone, subject: subject, group: groupName, groupTime: groupTime, due: due, absentDays: 0, monthlyFee: monthlyFee, expiryDate: expiryDate, lastPaidMonth: '' });
-let fullCardUrl = window.location.origin + window.location.pathname + "?code=" + id;
-document.getElementById("newStudentQr").innerHTML = "";
-new QRCode(document.getElementById("newStudentQr"), { text: fullCardUrl, width: 80, height: 80 });
-alert(`تم إنشاء الطالب بنجاح! الكود: ${id}`);
-}
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges(['students']);
-document.getElementById('newSName').value = ''; 
-document.getElementById('newSPhone').value = ''; 
-document.getElementById('newSDueManual').value = '';
-document.getElementById('newSMonthlyFee').value = '';
-document.getElementById('newSExpiryDate').value = '';
-document.getElementById('editStudentId').value = '';
-updateAdminDashboard();
-}
 
-function editStudent(id) {
-let student = students.find(s => s.id === id);
-if (!student) return;
-window.currentEditingOldId = student.id;
-document.getElementById('editStudentId').value = student.id;
-document.getElementById('editIdWrapper').style.display = 'block'; // Show editable ID field
-document.getElementById('newSName').value = student.name;
-document.getElementById('newSPhone').value = student.phone || '';
-document.getElementById('newSSubject').value = student.subject || 'محاسبة مالية وإدارة أعمال';
-document.getElementById('newSDueManual').value = student.due;
-document.getElementById('newSMonthlyFee').value = student.monthlyFee || '';
-document.getElementById('newSExpiryDate').value = student.expiryDate || '';
-document.getElementById('studentFormTitle').innerText = `✏️ تعديل: ${student.name}`;
-document.getElementById('studentSubmitBtn').innerText = 'تحديث البيانات';
-window.scrollTo({ top: 200, behavior: 'smooth' });
-}
+// Removed admin function: editStudent
 
-function deleteStudent(id) {
-if (confirm("هل تريد حذف هذا الطالب نهائياً؟"))
-{
-students = students.filter(s => s.id !== id);
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges('students');
-updateAdminDashboard();
-}
-}
 
-function chargeStudentFee() {
-let selectEl = document.getElementById('chargeStudentSelect');
-let studentId = selectEl.value;
-let reason = document.getElementById('chargeReasonSelect').value;
-let amount = parseFloat(document.getElementById('chargeAmount').value);
+// Removed admin function: deleteStudent
 
-if (!studentId) { alert("اختر الطالب أولاً"); return; }
-if (isNaN(amount) || amount <= 0) { alert("أدخل مبلغ صحيح"); return; }
 
-let student = students.find(s => s.id === studentId);
-if (!student) return;
+// Removed admin function: chargeStudentFee
 
-student.due += amount;
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-commitChanges('students');
-updateAdminDashboard();
 
-let phone = student.phone ? student.phone.replace(/^0+/, '20') : '';
-let msg = `تنبيه من سنتر مستر يسر الموافي للطالب ${student.name} 🌟\nتم تسجيل مصروف جديد عليك بقيمة *${amount} ج.م*.\nالسبب: ${reason}.\nإجمالي المستحق عليك حالياً: *${student.due} ج.م*.\nبرجاء المبادرة بالسداد.`;
-let url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-window.open(url, '_blank');
+// Removed admin function: approveAttendanceAction
 
-document.getElementById('chargeAmount').value = '';
-selectEl.value = '';
-alert(`تم تحميل المصروف على الطالب ${student.name} وتحديث حسابه بنجاح!`);
-}
 
-function approveAttendanceAction(requestId) {
-const i = attRequests.findIndex(r => r.requestId === requestId);
-if (i === -1) return;
-const request = attRequests[i];
-if (!request) return;
+// Removed admin function: approveAbsenceAction
 
-attRequests.splice(i, 1);
 
-if (!attendanceLog.some(a => a.studentId === request.studentId && a.date === request.date)) {
-attendanceLog.push({
-attendanceId: request.requestId || ('ATT_' + Date.now()),
-studentId: request.studentId,
-name: request.name,
-method: request.method || 'تسجيل حضور',
-date: request.date,
-time: request.time,
-approvedAt: new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }),
-status: 'approved'
-});
-}
+// Removed admin function: approvePaymentAction
 
-const student = students.find(s => s.id === request.studentId);
-if (student) {
-student.absentDays = Math.max(0, (student.absentDays || 0) - 1);
-}
 
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
-localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify(attendanceLog));
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-addAudit('تسجيل حضور', `تم تسجيل حضور الطالب ${request.name} بتاريخ ${request.date}`);
-commitChanges(['attRequests', 'attendanceLog', 'students', 'auditLog']);
-updateAdminDashboard();
-alert("تم تسجيل حضور الطالب بنجاح وترحيله لحظياً إلى تقارير الحضور وتم مسح الطلب فوري من المعلقة ✓");
-}
+// Removed admin function: rejectPaymentAction
 
-function approveAbsenceAction(requestId) {
-const i = attRequests.findIndex(r => r.requestId === requestId);
-if (i === -1) return;
-const request = attRequests[i];
-if (!request) return;
 
-attRequests.splice(i, 1);
+// Removed admin function: addExpense
 
-const student = students.find(s => s.id === request.studentId);
-if (student) {
-student.absentDays = (student.absentDays || 0) + 1;
-}
 
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify(attRequests));
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-addAudit('تسجيل غياب', `تم تسجيل غياب الطالب ${request.name} بتاريخ ${request.date}`);
-commitChanges(['attRequests', 'students', 'auditLog']);
-updateAdminDashboard();
-alert("تم تسجيل غياب الطالب وترحيله للتقارير وتم مسح الطلب فوري من المعلقة ✓");
-}
+// Removed admin function: resetSystemData
 
-function approvePaymentAction(requestId) {
-let i = payRequests.findIndex(r => r.requestId === requestId);
-if (i === -1) return;
-let p = payRequests[i];
-if (!p) return;
-
-if (p.type === 'تم الدفع') {
-income += p.amount;
-incomeLog.push({ name: p.name, subject: p.subject + ' (تم الدفع)', details: p.details, amount: p.amount });
-localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
-
-const paidStudent = students.find(s => s.id === p.studentId) || students[p.studentIndex];
-if (paidStudent) {
-  // التحقق الذكي من أن الدفع يخص اشتراك شهري مستحق أو منتهى الصلاحية
-  const isSubscriptionPayment = p.subject.includes("اشتراك") || p.details.includes("اشتراك") || (p.amount === paidStudent.monthlyFee) || isSubscriptionExpired(paidStudent);
-  
-  if (paidStudent.monthlyFee > 0 && isSubscriptionPayment) {
-    // تصفير وتجديد صلاحية الاشتراك تلقائياً عند قبول الطلب
-    let baseDate = new Date();
-    if (paidStudent.expiryDate) {
-      let parts = paidStudent.expiryDate.split('-');
-      let exp = new Date(parts[0], parts[1]-1, parts[2]);
-      if (!isNaN(exp.getTime())) {
-        baseDate = exp;
-      }
-    }
-    if (baseDate < new Date()) {
-      baseDate = new Date();
-    }
-    baseDate.setMonth(baseDate.getMonth() + 1);
-    let newExpiryStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
-    
-    paidStudent.expiryDate = newExpiryStr;
-    paidStudent.lastPaidMonth = getCurrentMonthKeyEgypt();
-    addAudit('تجديد اشتراك', `تم قبول طلب الدفع للطالب ${paidStudent.name} وتجديد صلاحية اشتراكه حتى ${newExpiryStr}`);
-  } else if (paidStudent.due > 0) {
-    // خصم من مديونية الالتزامات الأخرى
-    paidStudent.due = Math.max(0, paidStudent.due - p.amount);
-  }
-}
-paymentLog = paymentLog || [];
-paymentLog.push({ studentId: p.studentId, name: p.name, amount: p.amount, type: p.type, paidAt: new Date().toLocaleString('ar-EG') });
-localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-}
-
-payRequests.splice(i, 1);
-
-localStorage.setItem('ysr_sys_inc_2027', income);
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
-
-addAudit('مراجعة المدفوعات', `تم اعتماد حالة (${p.type}) للطالب ${p.name} بمبلغ ${p.amount} ج.م`);
-commitChanges(['incomeLog', 'paymentLog', 'income', 'students', 'payRequests', 'auditLog']);
-updateAdminDashboard();
-alert("تم اعتماد معاملة المدفوعات بنجاح وتصفير مستحقات الاشتراك ومسح الطلب فوراً!");
-}
-
-function rejectPaymentAction(requestId) {
-let i = payRequests.findIndex(r => r.requestId === requestId);
-if (i === -1) return;
-const p = payRequests[i];
-if (!p) return;
-
-payRequests.splice(i, 1);
-
-localStorage.setItem('ysr_sys_pay_2027', JSON.stringify(payRequests));
-commitChanges(['payRequests', 'auditLog']);
-updateAdminDashboard();
-addAudit('مراجعة المدفوعات', `تم رفض/تخطي طلب الدفع للطالب ${p && p.name ? p.name : 'غير معروف'}`);
-alert("تم إزالة الطلب نهائياً من قائمة المراجعة!");
-}
-
-function addExpense() {
-let v = parseFloat(document.getElementById('expValManual').value);
-let type = document.getElementById('expTypeSelect').value;
-if (isNaN(v) || v <= 0) { alert("أدخل مبلغ صحيح للمصروف العام"); return; }
-expenses += v;
-
-expensesLog.push({ type: type, amount: v });
-localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify(expensesLog));
-
-localStorage.setItem('ysr_sys_exp_2027', expenses);
-commitChanges(['expensesLog', 'expenses']);
-document.getElementById('expValManual').value = '';
-updateAdminDashboard();
-alert(`تم حفظ المصروف العام بقيمة ${v} ج.م بنجاح!`);
-}
-
-function resetSystemData() {
-if (confirm("⚠️ تحذير تصفير السيستم: هل أنت متأكد من مسح كافة الحركات والإيرادات والمصاريف والطلبات القديمة نهائياً مع الاحتفاظ بأسماء الطلاب وبياناتهم الأساسية فقط؟")) {
-// تصفير غيابات الطلاب الفردية للاحتفاظ ببيانات نظيفة
-students.forEach(s => {
-s.absentDays = 0;
-});
-localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-
-income = 0; 
-expenses = 0; 
-attRequests = []; 
-attendanceLog = []; 
-payRequests = []; 
-paymentLog = []; 
-incomeLog = []; 
-expensesLog = []; 
-auditLog = [];
-folders = [];
-files = [];
-submissions = [];
-
-localStorage.setItem('ysr_sys_inc_2027', 0);
-localStorage.setItem('ysr_sys_exp_2027', 0);
-localStorage.setItem('ysr_sys_att_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_att_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_pay_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_audit_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_exp_log_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_folders_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_files_2027', JSON.stringify([]));
-localStorage.setItem('ysr_sys_submissions_2027', JSON.stringify([]));
-
-commitChanges();
-updateAdminDashboard();
-alert("تم التصفير بنجاح، مُسحت كافة البيانات القديمة تماماً وبقيت بيانات وأسماء الطلاب نظيفة بلا تكرار!");
-}
-}
 
 function exportToExcel() {
 let tableHTML = `<html dir="rtl"><head><meta charset="UTF-8"></head><body>`;
@@ -2523,167 +1435,8 @@ if (el) el.value = '';
 renderAttendanceHistory();
 }
 
-function updateAdminDashboard() {
-renderSubscriptionAlerts();
-renderFirstOfMonthAlerts();
+// Removed admin function: updateAdminDashboard
 
-// Refresh secure folders and files lists for admin in real-time
-if (typeof renderAdminFoldersList === 'function') renderAdminFoldersList();
-if (typeof renderAdminFilesList === 'function') renderAdminFilesList();
-if (typeof renderAdminSubmissionsTable === 'function') renderAdminSubmissionsTable();
-
-document.getElementById('totInc').innerText = income;
-document.getElementById('totExp').innerText = expenses;
-document.getElementById('netProf').innerText = income - expenses;
-document.getElementById('totStudents').innerText = students.length;
-document.getElementById('totAttendance').innerText = attendanceLog.length;
-
-let chargeSelect = document.getElementById('chargeStudentSelect');
-let searchSelect = document.getElementById('searchStudentSelect');
-let payDirectSelect = document.getElementById('payStudentSelect');
-let chargeOptions = '<option value="">اختر الطالب...</option>';
-let searchOptions = '<option value="">اختر اسم الطالب للبحث...</option>';
-let payDirectOptions = '<option value="">اختر الطالب...</option>';
-
-students.forEach(s => {
-chargeOptions += `<option value="${s.id}">${s.name} (${s.id})</option>`;
-searchOptions += `<option value="${s.id}">${s.name} - (${s.subject || 'الكل'})</option>`;
-payDirectOptions += `<option value="${s.id}">${s.name} (${s.id})</option>`;
-});
-
-if (chargeSelect) chargeSelect.innerHTML = chargeOptions;
-if (searchSelect) searchSelect.innerHTML = searchOptions;
-if (payDirectSelect) payDirectSelect.innerHTML = payDirectOptions;
-renderStudentSchedule();
-
-let aHtml = '';
-let attDateVal = document.getElementById('attRequestsDateFilter') ? document.getElementById('attRequestsDateFilter').value : '';
-attRequests.forEach((item, i) => {
-  let show = true;
-  if (attDateVal) {
-    let parts = attDateVal.split('-');
-    let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
-    show = (item.isoDate === attDateVal || (item.date && item.date.includes(formattedAr)));
-  }
-  if (show) {
-    aHtml += `<tr>
-<td><b>${item.name}</b><br><small style="color:var(--text-muted);">${item.date || ''} - ${item.time}</small></td>
-<td>${item.time}</td>
-<td>
-<div class="action-btns">
-<button onclick="approveAttendanceAction('${item.requestId}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل حضور</button>
-<button onclick="approveAbsenceAction('${item.requestId}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تسجيل غياب</button>
-</div>
-</td>
-</tr>`;
-  }
-});
-const attTableEl = document.getElementById('attTable');
-if (attTableEl) attTableEl.innerHTML = aHtml || '<tr><td colspan="3">لا توجد طلبات حضور جديدة مطابقة</td></tr>';
-
-renderAttendanceHistory();
-
-const auditTable = document.getElementById('auditLogTable');
-if (auditTable) {
-let uniqueAudit = [];
-let seenSet = new Set();
-auditLog.slice().reverse().forEach(item => {
-let key = item.action + "_" + item.details;
-if (!seenSet.has(key)) {
-seenSet.add(key);
-uniqueAudit.push(item);
-}
-});
-
-let auditDateVal = document.getElementById('auditLogDateFilter') ? document.getElementById('auditLogDateFilter').value : '';
-let filteredAudit = uniqueAudit;
-if (auditDateVal) {
-  let parts = auditDateVal.split('-');
-  let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
-  filteredAudit = uniqueAudit.filter(item => {
-    let atStr = item.at || '';
-    return atStr.includes(auditDateVal) || atStr.includes(formattedAr);
-  });
-}
-
-auditTable.innerHTML = filteredAudit.slice(0, 100).map(a =>
-`<tr><td>${a.action}</td><td>${a.details}</td><td>${a.at}</td></tr>`
-).join('') || '<tr><td colspan="3">لا توجد عمليات مطابقة</td></tr>';
-}
-
-let pHtml = '';
-let payDateVal = document.getElementById('payRequestsDateFilter') ? document.getElementById('payRequestsDateFilter').value : '';
-payRequests.forEach((item, i) => {
-  let show = true;
-  if (payDateVal) {
-    let parts = payDateVal.split('-');
-    let formattedAr = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
-    let dateStr = item.createdAt || '';
-    show = (dateStr.includes(payDateVal) || dateStr.includes(formattedAr));
-  }
-  if (show) {
-    let badgeColor = item.type === 'تم الدفع' ? 'var(--success)' : 'var(--danger)';
-    pHtml += `<tr>
-<td><b>${item.name}</b><br><small>${item.subject}</small><br><span style="color:${badgeColor}; font-weight:bold;">${item.type}</span></td>
-<td><b>${item.amount} ج.م</b></td>
-<td>
-<div class="action-btns">
-<button onclick="approvePaymentAction('${item.requestId}'); playClickSound();" style="background:var(--success); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">موافقة وترحيل</button>
-<button onclick="rejectPaymentAction('${item.requestId}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تخطي/حذف</button>
-</div>
-</td>
-</tr>`;
-  }
-});
-const payTableEl = document.getElementById('payTable');
-if (payTableEl) payTableEl.innerHTML = pHtml || '<tr><td colspan="3">لا توجد طلبات مدفوعات مطابقة</td></tr>';
-
-let sHtml = '';
-students.forEach((s, idx) => {
-let absCount = s.absentDays || 0;
-let isWarning = absCount >= 2;
-let rowBg = isWarning ? 'background: rgba(239, 68, 68, 0.15);' : '';
-let isExpired = isSubscriptionExpired(s);
-let expiryText = s.expiryDate ? s.expiryDate : 'غير محدد';
-let expiryColor = isExpired ? 'var(--danger)' : 'var(--success)';
-
-let subProgress = getSubscriptionProgressHtml(s);
-
-sHtml += `<tr style="background:${rowBg}">
-<td>${s.id} ${isWarning ? '⚠️' : ''}</td>
-<td><b>${s.name}</b> ${isWarning ? '<br><small style="color:var(--danger); font-weight:bold;">تنبيه: غياب متكرر (' + absCount + ')</small>' : ''}</td>
-<td>${s.subject || 'الكل'}<br><small style="color:var(--accent);">${s.group || 'مجموعة عامة'} (${s.groupTime || 'بدون ميعاد'})</small></td>
-<td>${s.phone || 'بدون'}</td>
-<td>
-<span style="color:var(--success);">حضور: ${attendanceLog.filter(a => a.studentId === s.id).length}</span> |
-<span style="color:var(--danger);">غياب: ${absCount}</span><br>
-<span style="color:${s.due > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:bold;">ديون التزامات: ${s.due} ج.م</span>
-${s.monthlyFee > 0 ? `<br><span style="color:${expiryColor}; font-weight:bold;">الاشتراك: ${s.monthlyFee} ج.م (ينتهي: ${expiryText} - ${isExpired ? 'منتهى ✗' : 'صالح ✓'})</span>` : ''}
-${subProgress}
-<div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;">
-  ${s.monthlyFee > 0 ? `<button onclick="directPaySubscription('${s.id}'); playClickSound();" class="btn-custom" style="background:var(--success); font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💵 دفع الاشتراك</button>` : ''}
-  <button onclick="directPayObligation('${s.id}'); playClickSound();" class="btn-custom" style="background:#059669; font-size:10px; padding:3px 6px; width:auto; margin:0; font-weight:bold;">💰 دفع الالتزام</button>
-</div>
-</td>
-<td><button class="btn-print-qr" onclick="openPrintModal('${s.id}', '${s.name}'); playClickSound();">QR</button></td>
-<td>
-<div class="action-btns">
-<button onclick="sendWhatsappMsg(${idx}, 'welcome'); playClickSound();" style="background:#0284c7; color:white; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer;">ترحيب</button>
-<button onclick="sendWhatsappMsg(${idx}, 'due'); playClickSound();" style="background:#eab308; color:#0f172a; border:none; padding:3px 5px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:bold;">تنبيه</button>
-</div>
-</td>
-<td>
-<div class="action-btns">
-<button onclick="editStudent('${s.id}'); playClickSound();" style="background:#d97706; color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">تعديل</button>
-<button onclick="deleteStudent('${s.id}'); playClickSound();" style="background:var(--danger); color:white; border:none; padding:3px 5px; border-radius:3px; cursor:pointer;">حذف</button>
-</div>
-</td>
-</tr>`;
-});
-
-const studentsListTableEl = document.getElementById('studentsListTable');
-if (studentsListTableEl) studentsListTableEl.innerHTML = sHtml || '<tr><td colspan="8">لا يوجد طلاب مسجلين</td></tr>';
-}
 
 function getCurrentMonthKeyEgypt() {
   const now = new Date();
@@ -2835,95 +1588,11 @@ function renderSubscriptionAlerts() {
   tbody.innerHTML = html;
 }
 
-function directPaySubscription(id) {
-  const student = students.find(s => s.id === id);
-  if (!student) return;
-  const amount = student.monthlyFee;
-  if (!amount || amount <= 0) {
-    alert("برجاء تحديد قيمة الاشتراك الشهري لهذا الطالب أولاً!");
-    return;
-  }
-  
-  // Calculate new expiration date (30 days/1 month from previous expiry or from today if already expired)
-  let baseDate = new Date();
-  if (student.expiryDate) {
-    let parts = student.expiryDate.split('-');
-    let exp = new Date(parts[0], parts[1]-1, parts[2]);
-    if (!isNaN(exp.getTime())) {
-      baseDate = exp;
-    }
-  }
-  if (baseDate < new Date()) {
-    baseDate = new Date();
-  }
-  baseDate.setMonth(baseDate.getMonth() + 1);
-  let newExpiryStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
-  
-  student.expiryDate = newExpiryStr;
-  student.lastPaidMonth = getCurrentMonthKeyEgypt();
-  
-  income += amount;
-  incomeLog.push({
-    name: student.name,
-    subject: 'تجديد اشتراك شهري',
-    details: `تجديد الصلاحية حتى ${newExpiryStr} كاش مباشرة`,
-    amount: amount
-  });
-  
-  paymentLog = paymentLog || [];
-  paymentLog.push({
-    studentId: student.id,
-    name: student.name,
-    amount: amount,
-    type: 'تم الدفع',
-    paidAt: new Date().toLocaleString('ar-EG')
-  });
-  
-  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-  localStorage.setItem('ysr_sys_inc_2027', income);
-  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
-  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-  
-  addAudit('تسجيل مدفوعات', `تم سداد وتجديد الاشتراك الشهري للطالب ${student.name} بقيمة ${amount} ج.م للموعد الجديد ${newExpiryStr}`);
-  commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
-  updateAdminDashboard();
-  alert(`✅ تم تجديد اشتراك الطالب ${student.name} بنجاح حتى تاريخ ${newExpiryStr}!`);
-}
+// Removed admin function: directPaySubscription
 
-function directPayObligation(id) {
-  const student = students.find(s => s.id === id);
-  if (!student) return;
-  let amount = parseFloat(prompt(`أدخل المبلغ المدفوع من الالتزام المالي للطالب (الالتزام الحالي: ${student.due} ج.م):`, student.due));
-  if (isNaN(amount) || amount <= 0) return;
-  if (amount > student.due) {
-    alert("المبلغ المدفوع أكبر من الالتزام المالي المستحق!");
-    return;
-  }
-  student.due = Math.max(0, student.due - amount);
-  income += amount;
-  incomeLog.push({
-    name: student.name,
-    subject: 'سداد التزام مالي',
-    details: 'دفعة نقدية كاش للالتزامات والديون',
-    amount: amount
-  });
-  paymentLog = paymentLog || [];
-  paymentLog.push({
-    studentId: student.id,
-    name: student.name,
-    amount: amount,
-    type: 'تم الدفع',
-    paidAt: new Date().toLocaleString('ar-EG')
-  });
-  localStorage.setItem('ysr_sys_st_2027', JSON.stringify(students));
-  localStorage.setItem('ysr_sys_inc_2027', income);
-  localStorage.setItem('ysr_sys_inc_log_2027', JSON.stringify(incomeLog));
-  localStorage.setItem('ysr_sys_payment_log_2027', JSON.stringify(paymentLog));
-  addAudit('تسجيل مدفوعات', `تم سداد جزء من التزام الطالب ${student.name} بقيمة ${amount} ج.م المتبقي: ${student.due} ج.م`);
-  commitChanges(['students', 'income', 'incomeLog', 'paymentLog', 'auditLog']);
-  updateAdminDashboard();
-  alert(`✅ تم إثبات سداد ${amount} ج.م بنجاح وترحيلها للإيرادات!`);
-}
+
+// Removed admin function: directPayObligation
+
 
 function renderFirstOfMonthAlerts(forceShow = false) {
   const alertBox = document.getElementById('firstOfMonthAlertBox');
@@ -2987,36 +1656,15 @@ function renderFirstOfMonthAlerts(forceShow = false) {
 // =========================================================================
 
 // فتح وإغلاق لوحة إدارة المحتوى والواجبات (للآدمن)
-function openContentManagerModal() {
-  document.getElementById('contentManagerModal').style.display = 'flex';
-  switchModalTab('createFolder');
-  renderAdminFoldersList();
-  renderAdminFilesList();
-  renderAdminSubmissionsTable();
-}
+// Removed admin function: openContentManagerModal
 
-function closeContentManagerModal() {
-  document.getElementById('contentManagerModal').style.display = 'none';
-}
+
+// Removed admin function: closeContentManagerModal
+
 
 // التنقل بين تبويبات لوحة إدارة المحتوى
-function switchModalTab(tabId) {
-  document.querySelectorAll('.modal-tab-content').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
-  
-  if (tabId === 'createFolder') {
-    document.getElementById('modalTabCreateFolder').style.display = 'block';
-    document.getElementById('tabBtnCreateFolder').classList.add('active');
-  } else if (tabId === 'uploadFile') {
-    document.getElementById('modalTabUploadFile').style.display = 'block';
-    document.getElementById('tabBtnUploadFile').classList.add('active');
-    populateFoldersDropdown();
-  } else if (tabId === 'submissions') {
-    document.getElementById('modalTabSubmissions').style.display = 'block';
-    document.getElementById('tabBtnSubmissions').classList.add('active');
-    renderAdminSubmissionsTable();
-  }
-}
+// Removed admin function: switchModalTab
+
 
 // تعبئة قائمة المجلدات المتاحة في نموذج رفع الملفات
 function populateFoldersDropdown() {
@@ -3031,365 +1679,43 @@ function populateFoldersDropdown() {
 }
 
 // 📁 1. إدارة المجلدات (إنشاء وحذف وعرض)
-function createContentFolder() {
-  const nameInput = document.getElementById('newFolderNameInput');
-  const subjectSelect = document.getElementById('folderSubjectInput');
-  
-  const name = nameInput.value.trim();
-  const subject = subjectSelect.value;
-  
-  if (!name) {
-    alert("⚠️ من فضلك اكتب اسماً للمجلد أولاً!");
-    return;
-  }
-  
-  const newFolder = {
-    id: 'FLD_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-    name: name,
-    subject: subject,
-    createdAt: new Date().toLocaleDateString('ar-EG')
-  };
-  
-  folders.push(newFolder);
-  localStorage.setItem('ysr_sys_folders_2027', JSON.stringify(folders));
-  
-  addAudit('إدارة المكتبة', `تم إنشاء مجلد جديد باسم: ${name}`);
-  commitChanges(['folders', 'auditLog']);
-  
-  nameInput.value = '';
-  renderAdminFoldersList();
-  alert("📁 تم إنشاء المجلد الجديد وتجهيزه لرفع الملفات بنجاح!");
-}
+// Removed admin function: createContentFolder
 
-function deleteContentFolder(folderId) {
-  const folder = folders.find(f => f.id === folderId);
-  if (!folder) return;
-  
-  if (confirm(`⚠️ تحذير: هل أنت متأكد من حذف مجلد "${folder.name}"؟\nسيتم حذف المجلد وكافة المذكرات والواجبات المرتبطة به سحابياً ومحلياً!`)) {
-    // Delete files in this folder first from Storage and Database
-    const filesToDelete = files.filter(f => f.folderId === folderId);
-    
-    filesToDelete.forEach(fileObj => {
-      // If uploaded through Firebase Storage, delete from cloud storage
-      if (fileObj.cloudPath && typeof window.deleteFileFromCloud === 'function') {
-        window.deleteFileFromCloud(fileObj.cloudPath, () => {}, (err) => { console.log(err); });
-      }
-    });
-    
-    // Filter out of arrays
-    files = files.filter(f => f.folderId !== folderId);
-    folders = folders.filter(f => f.id !== folderId);
-    
-    localStorage.setItem('ysr_sys_folders_2027', JSON.stringify(folders));
-    localStorage.setItem('ysr_sys_files_2027', JSON.stringify(files));
-    
-    addAudit('إدارة المكتبة', `تم حذف المجلد وكافة محتوياته: ${folder.name}`);
-    commitChanges(['folders', 'files', 'auditLog']);
-    
-    renderAdminFoldersList();
-    renderAdminFilesList();
-    alert("🗑️ تم حذف المجلد وجميع الملفات التابعة له بنجاح!");
-  }
-}
 
-function renderAdminFoldersList() {
-  const container = document.getElementById('adminFoldersList');
-  if (!container) return;
-  
-  if (folders.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">لا توجد مجلدات مسجلة حالياً.</p>';
-    return;
-  }
-  
-  let html = '<table><thead><tr><th>اسم المجلد</th><th>المادة المستهدفة</th><th>تاريخ الإنشاء</th><th>الإجراء</th></tr></thead><tbody>';
-  folders.forEach(f => {
-    html += `<tr>
-      <td><b>${f.name}</b></td>
-      <td><span style="color: var(--accent); font-weight: bold;">${f.subject}</span></td>
-      <td>${f.createdAt}</td>
-      <td>
-        <button onclick="deleteContentFolder('${f.id}'); playClickSound();" style="background: var(--danger); color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">حذف المجلد 🗑️</button>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
+// Removed admin function: deleteContentFolder
+
+
+// Removed admin function: renderAdminFoldersList
+
 
 // 📝 2. مصمم أسئلة الواجب التفاعلي
 let currentHomeworkQuestions = [];
 
-function toggleHomeworkBuilderArea() {
-  const isHomework = document.getElementById('fileIsHomeworkInput').checked;
-  const area = document.getElementById('homeworkBuilderArea');
-  if (isHomework) {
-    area.style.display = 'block';
-    currentHomeworkQuestions = [];
-    document.getElementById('homeworkQuestionsContainer').innerHTML = '';
-    addNewHomeworkQuestionRow(); // Start with at least one question
-  } else {
-    area.style.display = 'none';
-  }
-}
+// Removed admin function: toggleHomeworkBuilderArea
 
-function addNewHomeworkQuestionRow() {
-  const container = document.getElementById('homeworkQuestionsContainer');
-  if (!container) return;
-  
-  const qIndex = currentHomeworkQuestions.length;
-  const questionId = 'Q_' + Date.now() + '_' + qIndex;
-  
-  const block = document.createElement('div');
-  block.className = 'question-card-builder';
-  block.id = questionId;
-  block.innerHTML = `
-    <button class="remove-question-btn" onclick="removeHomeworkQuestionRow('${questionId}')">إزالة السؤال ✗</button>
-    <h5 style="margin: 0 0 6px 0; color: var(--accent); font-size: 12px;">سؤال ${qIndex + 1}:</h5>
-    <input type="text" class="q-text" placeholder="اكتب نص السؤال هنا (مثال: ميزان المراجعة عبارة عن...)" style="margin-bottom: 6px;">
-    
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-      <input type="text" class="opt-a" placeholder="اختيار (أ)" style="margin:0 0 4px 0; font-size:11px;">
-      <input type="text" class="opt-b" placeholder="اختيار (ب)" style="margin:0 0 4px 0; font-size:11px;">
-      <input type="text" class="opt-c" placeholder="اختيار (ج)" style="margin:0 0 4px 0; font-size:11px;">
-      <input type="text" class="opt-d" placeholder="اختيار (د)" style="margin:0 0 4px 0; font-size:11px;">
-    </div>
-    
-    <label style="font-size:11px; color: var(--text-muted); font-weight: bold; margin-top: 4px; display: block;">الإجابة الصحيحة للحل التلقائي:</label>
-    <select class="correct-opt" style="margin: 4px 0 0 0; padding: 4px;">
-      <option value="0">الاختيار الأول (أ)</option>
-      <option value="1">الاختيار الثاني (ب)</option>
-      <option value="2">الاختيار الثالث (ج)</option>
-      <option value="3">الاختيار الرابع (د)</option>
-    </select>
-  `;
-  
-  container.appendChild(block);
-  currentHomeworkQuestions.push(questionId);
-}
 
-function removeHomeworkQuestionRow(id) {
-  const block = document.getElementById(id);
-  if (block) {
-    block.remove();
-    currentHomeworkQuestions = currentHomeworkQuestions.filter(q => q !== id);
-  }
-}
+// Removed admin function: addNewHomeworkQuestionRow
+
+
+// Removed admin function: removeHomeworkQuestionRow
+
 
 // 📄 3. رفع ملف المذكرات والواجبات وإدارتها
-function uploadAndPublishFile() {
-  const folderId = document.getElementById('fileFolderSelect').value;
-  const fileName = document.getElementById('newFileNameInput').value.trim();
-  const fileField = document.getElementById('newFileField');
-  const allowDownload = document.getElementById('fileDownloadPermInput').checked;
-  const isHomework = document.getElementById('fileIsHomeworkInput').checked;
-  const homeworkDuration = parseInt(document.getElementById('homeworkDurationInput').value) || 60;
-  
-  if (!folderId) { alert("⚠️ يرجى اختيار المجلد المستهدف أولاً!"); return; }
-  if (!fileName) { alert("⚠️ يرجى كتابة عنوان الملف الموجه للطالب!"); return; }
-  if (!fileField.files || fileField.files.length === 0) { alert("⚠️ يرجى اختيار ملف PDF أو صورة من حاسوبك أولاً!"); return; }
-  
-  const file = fileField.files[0];
-  const cloudPath = `ysr_center_files/${Date.now()}_${file.name}`;
-  
-  // Show progress bar
-  const progressContainer = document.getElementById('uploadProgressContainer');
-  const progressBar = document.getElementById('uploadProgressBar');
-  const progressPercent = document.getElementById('uploadProgressPercent');
-  const uploadBtn = document.getElementById('uploadContentBtn');
-  
-  progressContainer.style.display = 'block';
-  progressBar.value = 0;
-  progressPercent.innerText = '0%';
-  uploadBtn.disabled = true;
-  uploadBtn.innerText = '⏳ جاري الرفع والتشفير سحابياً...';
-  
-  // Run direct uploadBytesResumable to Firebase Storage
-  window.uploadFileToCloud(file, cloudPath, 
-    (percent) => {
-      // Progress handler
-      progressBar.value = percent;
-      progressPercent.innerText = Math.round(percent) + '%';
-    },
-    (downloadURL) => {
-      // Success handler
-      progressContainer.style.display = 'none';
-      uploadBtn.disabled = false;
-      uploadBtn.innerText = '🚀 رفع الملف ونشره للطلاب';
-      
-      // Collect Homework Questions if selected
-      let homeworkQuestions = [];
-      if (isHomework) {
-        let isQuestionsValid = true;
-        currentHomeworkQuestions.forEach((qId, idx) => {
-          const card = document.getElementById(qId);
-          if (!card) return;
-          
-          const qText = card.querySelector('.q-text').value.trim();
-          const optA = card.querySelector('.opt-a').value.trim();
-          const optB = card.querySelector('.opt-b').value.trim();
-          const optC = card.querySelector('.opt-c').value.trim();
-          const optD = card.querySelector('.opt-d').value.trim();
-          const correctOpt = parseInt(card.querySelector('.correct-opt').value);
-          
-          if (!qText || !optA || !optB) {
-            isQuestionsValid = false;
-          }
-          
-          homeworkQuestions.push({
-            questionText: qText,
-            options: [optA, optB, optC || '', optD || ''],
-            correctOption: correctOpt
-          });
-        });
-        
-        if (!isQuestionsValid || homeworkQuestions.length === 0) {
-          alert("⚠️ تحذير: لم تكمل كتابة نص الأسئلة أو الاختيارات للواجب! سيتم نشر الملف بدون أسئلة تفاعلية.");
-        }
-      }
-      
-      const newFile = {
-        id: 'FIL_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-        folderId: folderId,
-        name: fileName,
-        fileUrl: downloadURL,
-        cloudPath: cloudPath,
-        allowDownload: allowDownload,
-        isHomework: isHomework,
-        homeworkDuration: homeworkDuration,
-        homeworkQuestions: homeworkQuestions,
-        createdAt: new Date().toLocaleDateString('ar-EG')
-      };
-      
-      files.push(newFile);
-      localStorage.setItem('ysr_sys_files_2027', JSON.stringify(files));
-      
-      addAudit('إدارة المكتبة', `تم رفع ونشر ملف جديد: ${fileName}`);
-      commitChanges(['files', 'auditLog']);
-      
-      // Clear fields
-      document.getElementById('newFileNameInput').value = '';
-      fileField.value = '';
-      document.getElementById('fileIsHomeworkInput').checked = false;
-      document.getElementById('homeworkBuilderArea').style.display = 'none';
-      currentHomeworkQuestions = [];
-      
-      renderAdminFilesList();
-      alert("✅ تم رفع الملف وتشفيره بنجاح ونُشر فوراً على السحابة وبوابات الطلاب المعتمدين!");
-    },
-    (error) => {
-      // Error handler
-      progressContainer.style.display = 'none';
-      uploadBtn.disabled = false;
-      uploadBtn.innerText = '🚀 رفع الملف ونشره للطلاب';
-      console.error(error);
-      alert("❌ خطأ أثناء الرفع: تأكد من تفعيل السحابة في حسابك أو حجم الملف مقبول! سيتم تفعيل خاصية الروابط الاحتياطية.");
-    }
-  );
-}
+// Removed admin function: uploadAndPublishFile
 
-function deletePublishedFile(fileId) {
-  const file = files.find(f => f.id === fileId);
-  if (!file) return;
-  
-  if (confirm(`هل تريد بالتأكيد حذف ملف "${file.name}" نهائياً من قاعدة البيانات والـ Storage السحابي؟`)) {
-    // Delete from Firebase Storage if path exists
-    if (file.cloudPath && typeof window.deleteFileFromCloud === 'function') {
-      window.deleteFileFromCloud(file.cloudPath, () => {}, (err) => { console.log(err); });
-    }
-    
-    files = files.filter(f => f.id !== fileId);
-    localStorage.setItem('ysr_sys_files_2027', JSON.stringify(files));
-    
-    addAudit('إدارة المكتبة', `تم حذف ملف من المكتبة: ${file.name}`);
-    commitChanges(['files', 'auditLog']);
-    
-    renderAdminFilesList();
-    alert("🗑️ تم حذف الملف نهائياً وتحديث المكتبة!");
-  }
-}
 
-function renderAdminFilesList() {
-  const container = document.getElementById('adminFilesList');
-  if (!container) return;
-  
-  if (files.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">لا توجد مذكرات أو ملفات منشورة حالياً.</p>';
-    return;
-  }
-  
-  let html = '<table><thead><tr><th>عنوان الملف</th><th>المجلد</th><th>النوع</th><th>الصلاحيات والتحميل</th><th>تاريخ النشر</th><th>الإجراء</th></tr></thead><tbody>';
-  files.forEach(f => {
-    const folder = folders.find(fold => fold.id === f.folderId);
-    const folderName = folder ? folder.name : 'مجلد مجهول';
-    const typeText = f.isHomework ? '<span style="color: #f59e0b; font-weight: bold;">📝 واجب تفاعلي</span>' : '<span style="color: #10b981;">📄 شرح/كتاب</span>';
-    const downloadText = f.allowDownload ? '<span style="color: var(--success); font-weight: bold;">مفتوح 📥</span>' : '<span style="color: var(--danger); font-weight: bold;">معطل 🔒 (قراءة فقط)</span>';
-    
-    html += `<tr>
-      <td><b>${f.name}</b></td>
-      <td>${folderName}</td>
-      <td>${typeText}</td>
-      <td>${downloadText}</td>
-      <td>${f.createdAt}</td>
-      <td>
-        <div class="action-btns">
-          <button onclick="openSecureFileViewer('${f.fileUrl}', '${f.cloudPath}', ${f.allowDownload}, '${f.name}'); playClickSound();" style="background: var(--accent); color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;">عرض 👁️</button>
-          <button onclick="deletePublishedFile('${f.id}'); playClickSound();" style="background: var(--danger); color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px;">حذف 🗑️</button>
-        </div>
-      </td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
+// Removed admin function: deletePublishedFile
+
+
+// Removed admin function: renderAdminFilesList
+
 
 // 🏆 4. كشف درجات الطلاب في الواجبات التفاعلية
-function renderAdminSubmissionsTable() {
-  const tbody = document.getElementById('adminSubmissionsTableBody');
-  if (!tbody) return;
-  
-  const searchVal = document.getElementById('submissionsSearchInput').value.trim().toLowerCase();
-  
-  let filtered = submissions.slice().reverse();
-  if (searchVal) {
-    filtered = filtered.filter(item => 
-      (item.studentName && item.studentName.toLowerCase().includes(searchVal)) ||
-      (item.studentId && item.studentId.toLowerCase().includes(searchVal)) ||
-      (item.fileName && item.fileName.toLowerCase().includes(searchVal))
-    );
-  }
-  
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6">لا توجد تسليمات واجب متطابقة حالياً.</td></tr>';
-    return;
-  }
-  
-  tbody.innerHTML = filtered.map(item => {
-    const minSpent = Math.floor(item.timeSpent / 60);
-    const secSpent = item.timeSpent % 60;
-    const durationText = `${minSpent} دقيقة و ${secSpent} ثانية`;
-    
-    return `<tr>
-      <td><b>${item.studentName}</b><br><small style="color: var(--text-muted);">${item.studentId}</small></td>
-      <td>${item.fileName}</td>
-      <td><span style="color: var(--success); font-weight: 900; font-size: 13px;">${item.grade}</span></td>
-      <td>${durationText}</td>
-      <td>${item.submittedAt}</td>
-      <td>
-        <button onclick="deleteSubmission('${item.id}'); playClickSound();" style="background: var(--danger); color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">مسح 🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
+// Removed admin function: renderAdminSubmissionsTable
 
-function deleteSubmission(id) {
-  if (confirm("هل تريد بالتأكيد حذف سجل درجة هذا الطالب نهائياً؟")) {
-    submissions = submissions.filter(s => s.id !== id);
-    localStorage.setItem('ysr_sys_submissions_2027', JSON.stringify(submissions));
-    commitChanges(['submissions']);
-    renderAdminSubmissionsTable();
-    alert("🗑️ تم مسح السجل بنجاح!");
-  }
-}
+
+// Removed admin function: deleteSubmission
+
 
 function clearSubmissionsSearch() {
   document.getElementById('submissionsSearchInput').value = '';
